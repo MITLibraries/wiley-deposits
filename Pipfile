@@ -9,7 +9,7 @@ openpyxl = "*"
 click = "*"
 
 [dev-packages]
-black = "*"
+black = "==21.7b0"
 isort = "*"
 flake8 = "*"
 pylama = "*"
@@ -20,5 +20,5 @@ requests-mock = "*"
 [requires]
 python_version = "3.9"
 
-[pipenv]
-allow_prereleases = true
+[scripts]
+awd = "python -c \"from awd.cli import cli; cli()\""
