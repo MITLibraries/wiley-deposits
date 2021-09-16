@@ -22,20 +22,19 @@ def get_crossref_work_from_doi(api_url, doi):
 def get_metadata_dict_from_crossref_work(work):
     """Create metadata dict from a Crossref work JSON record."""
     keys_for_dspace = [
-        "publisher",
-        "issue",
-        "page",
-        "title",
-        "volume",
         "author",
         "container-title",
-        "original-title",
-        "language",
-        "subtitle",
-        "short-title",
-        "issued",
-        "URL",
         "ISSN",
+        "issue",
+        "issued",
+        "language",
+        "original-title",
+        "publisher",
+        "short-title",
+        "subtitle",
+        "title",
+        "URL",
+        "volume",
     ]
     work = work["message"]
     value_dict = {}
