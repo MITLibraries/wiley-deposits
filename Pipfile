@@ -18,6 +18,7 @@ bandit = "*"
 pytest = "*"
 requests-mock = "*"
 pytest-cov = "*"
+moto = "*"
 
 [requires]
 python_version = "3.9"
