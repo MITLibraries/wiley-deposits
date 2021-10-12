@@ -1,24 +1,4 @@
-import json
-
-import pytest
-import requests_mock
-
 from awd import crossref
-
-
-@pytest.fixture()
-def crossref_mock(work_record):
-    with requests_mock.Mocker() as m:
-        m.get(
-            "http://example.com/works/10.1002/term.3131?mailto=dspace-lib@mit.edu",
-            json=work_record,
-        )
-        yield m
-
-
-@pytest.fixture()
-def work_record():
-    return json.loads(open("fixtures/crossref.json", "r").read())
 
 
 def test_get_dois_from_spreadsheet():
@@ -27,7 +7,7 @@ def test_get_dois_from_spreadsheet():
         assert doi == "10.1002/term.3131"
 
 
-def test_get_crossref_work_from_dois(crossref_mock):
+def test_get_crossref_work_from_dois(web_mock):
     doi = "10.1002/term.3131"
     work = crossref.get_crossref_work_from_doi("http://example.com/works/", doi)
     assert work["message"]["title"] == [
@@ -35,10 +15,20 @@ def test_get_crossref_work_from_dois(crossref_mock):
     ]
 
 
-def test_get_metadata_dict_from_crossref_work(crossref_mock, work_record):
-    value_dict = crossref.get_metadata_dict_from_crossref_work(work_record)
-    assert (
-        value_dict["title"] == "Metal‐based nanoparticles for bone tissue engineering"
+def test_get_metadata_dict_from_crossref_work(
+    web_mock, crossref_value_dict, crossref_work_record
+):
+    value_dict = crossref.get_metadata_dict_from_crossref_work(crossref_work_record)
+    assert value_dict == crossref_value_dict
+
+
+def test_create_dspace_metadata_from_dict_minimum_metadata():
+    value_dict = {
+        "title": "Metal‐based nanoparticles for bone tissue engineering",
+        "URL": "http://dx.doi.org/10.1002/term.3131",
+    }
+    metadata = crossref.create_dspace_metadata_from_dict(
+        value_dict, "config/metadata_mapping.json"
     )
     assert value_dict["publisher"] == "Wiley"
     assert value_dict["author"] == [
