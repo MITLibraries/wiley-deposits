@@ -2,7 +2,7 @@ from awd import crossref
 
 
 def test_get_dois_from_spreadsheet():
-    dois = crossref.get_dois_from_spreadsheet("fixtures/test.csv")
+    dois = crossref.get_dois_from_spreadsheet("tests/fixtures/test.csv")
     for doi in dois:
         assert doi == "10.1002/term.3131"
 
@@ -30,23 +30,22 @@ def test_create_dspace_metadata_from_dict_minimum_metadata():
     metadata = crossref.create_dspace_metadata_from_dict(
         value_dict, "config/metadata_mapping.json"
     )
-    assert value_dict["publisher"] == "Wiley"
-    assert value_dict["author"] == [
-        "Eivazzadeh‐Keihan, Reza",
-        "Bahojb Noruzi, Ehsan",
-        "Khanmohammadi Chenab, Karim",
-        "Jafari, Amir",
-        "Radinekiyan, Fateme",
-        "Hashemi, Seyed Masoud",
-        "Ahmadpour, Farnoush",
-        "Behboudi, Ali",
-        "Mosafer, Jafar",
-        "Mokhtarzadeh, Ahad",
-        "Maleki, Ali",
-        "Hamblin, Michael R.",
+    assert metadata["metadata"] == [
+        {
+            "key": "dc.title",
+            "value": "Metal‐based nanoparticles for bone tissue engineering",
+        },
+        {
+            "key": "dc.relation.isversionof",
+            "value": "http://dx.doi.org/10.1002/term.3131",
+        },
     ]
-    assert value_dict["URL"] == "http://dx.doi.org/10.1002/term.3131"
-    assert value_dict["container-title"] == [
-        "Journal of Tissue Engineering and Regenerative Medicine"
-    ]
-    assert value_dict["issued"] == "2020-09-30"
+
+
+def test_transform_dict_with_metadata_mapping_full_metadata(
+    crossref_value_dict, dspace_metadata
+):
+    metadata = crossref.create_dspace_metadata_from_dict(
+        crossref_value_dict, "config/metadata_mapping.json"
+    )
+    assert metadata == dspace_metadata
