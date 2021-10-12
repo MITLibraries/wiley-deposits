@@ -1,14 +1,12 @@
-import pandas
 import requests
+import smart_open
 
 
 def get_dois_from_spreadsheet(file):
-    """Retriev DOIs from the Wiley-provided spreadsheet."""
-    excel_data_df = pandas.read_excel(
-        file, sheet_name="MIT Article List", skiprows=range(0, 4)
-    )
-    for doi in excel_data_df["DOI"].tolist():
-        yield doi
+    """Retriev DOIs from the Wiley-provided CSV file."""
+    with smart_open.open(file, encoding="utf-8-sig") as csvfile:
+        for doi in csvfile.read().splitlines():
+            yield doi
 
 
 def get_crossref_work_from_doi(api_url, doi):

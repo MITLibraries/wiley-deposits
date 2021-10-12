@@ -4,10 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pandas = "*"
-openpyxl = "*"
 click = "*"
 coveralls = "*"
+smart-open = "*"
 
 [dev-packages]
 black = "==21.7b0"
