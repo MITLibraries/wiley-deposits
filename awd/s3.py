@@ -9,7 +9,7 @@ class S3:
         self.client = client("s3")
 
     def put_file(self, file, bucket, key):
-        """"""
+        """Put a file in a specified S3 bucket with a specified key."""
         response = self.client.put_object(
             Body=file,
             Bucket=bucket,

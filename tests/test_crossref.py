@@ -2,7 +2,7 @@ from awd import crossref
 
 
 def test_get_dois_from_spreadsheet():
-    dois = crossref.get_dois_from_spreadsheet("tests/fixtures/test.csv")
+    dois = crossref.get_dois_from_spreadsheet("tests/fixtures/dois.csv")
     for doi in dois:
         assert doi == "10.1002/term.3131"
 
