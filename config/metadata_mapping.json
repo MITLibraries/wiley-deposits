@@ -1,0 +1,15 @@
+{
+  "author": "dc.contributor.author",
+  "container-title": "dc.relation.journal",
+  "ISSN": "dc.identifier.issn",
+  "issue": "mit.journal.issue",
+  "issued": "dc.date.issued",
+  "language": "dc.langauge",
+  "original-title": "dc.title.alternative",
+  "publisher": "dc.publisher",
+  "short-title": "dc.title.alternative",
+  "subtitle": "dc.title.alternative",
+  "title": "dc.title",
+  "URL": "dc.relation.isversionof",
+  "volume": "mit.journal.volume"
+}

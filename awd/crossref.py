@@ -1,3 +1,5 @@
+import json
+
 import requests
 import smart_open
 
@@ -40,7 +42,7 @@ def get_metadata_dict_from_crossref_work(work):
         if key == "author":
             authors = []
             for author in work["author"]:
-                name = f'{author["family"]}, {author["given"]}'
+                name = f'{author.get("family")}, {author.get("given")}'
                 authors.append(name)
             value_dict[key] = authors
         elif key == "title":
@@ -51,3 +53,19 @@ def get_metadata_dict_from_crossref_work(work):
         else:
             value_dict[key] = work[key]
     return value_dict
+
+
+def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
+    """Create DSpace JSON metadata from metadata dict and a JSON metadata mapping file."""
+    with open(metadata_mapping_path, "r") as metadata_mapping:
+        metadata_mapping = json.load(metadata_mapping)
+        metadata = []
+        for key in [k for k in metadata_mapping if k in value_dict.keys()]:
+            if isinstance(value_dict[key], list):
+                for list_item in value_dict[key]:
+                    metadata.append({"key": metadata_mapping[key], "value": list_item})
+            else:
+                metadata.append(
+                    {"key": metadata_mapping[key], "value": value_dict[key]}
+                )
+        return {"metadata": metadata}
