@@ -22,7 +22,7 @@ def work_record():
 
 
 def test_get_dois_from_spreadsheet():
-    dois = crossref.get_dois_from_spreadsheet("fixtures/test.xlsx")
+    dois = crossref.get_dois_from_spreadsheet("fixtures/test.csv")
     for doi in dois:
         assert doi == "10.1002/term.3131"
 
