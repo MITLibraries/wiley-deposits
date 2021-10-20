@@ -132,4 +132,5 @@ dmypy.json
 *.pdf
 *.xlsx
 .DS_Store
-!tests/fixtures/test.csv
+!tests/fixtures/*.csv
+!tests/fixtures/*.pdf

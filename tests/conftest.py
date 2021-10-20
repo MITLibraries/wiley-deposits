@@ -24,8 +24,23 @@ def mocked_s3(aws_credentials):
 
 
 @pytest.fixture()
-def web_mock(crossref_work_record):
+def web_mock(crossref_work_record, wiley_pdf):
     with requests_mock.Mocker() as m:
+        request_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
+        }
+        m.get(
+            "http://example.com/doi/10.1002/term.3131",
+            text="Forbidden",
+            status_code=403,
+        )
+        m.get(
+            "http://example.com/doi/10.1002/term.3131",
+            content=wiley_pdf,
+            headers={"Content-Type": "application/pdf; charset=UTF-8"},
+            request_headers=request_headers,
+        )
         m.get(
             "http://example.com/works/10.1002/term.3131?mailto=dspace-lib@mit.edu",
             json=crossref_work_record,
@@ -46,3 +61,8 @@ def crossref_value_dict():
 @pytest.fixture()
 def dspace_metadata():
     return json.loads(open("tests/fixtures/dspace_metadata.json", "r").read())
+
+
+@pytest.fixture()
+def wiley_pdf():
+    return open("tests/fixtures/wiley.pdf", "rb").read()
