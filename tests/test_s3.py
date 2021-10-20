@@ -1,7 +1,7 @@
 from awd.s3 import S3
 
 
-def test_s3_put_file(mocked_s3):
+def test_s3_put_file(s3_mock):
     s3 = S3()
     assert "Contents" not in s3.client.list_objects(Bucket="awd")
     s3.put_file(
