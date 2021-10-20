@@ -1,4 +1,8 @@
+import logging
+
 from boto3 import client
+
+logger = logging.getLogger(__name__)
 
 
 class SQS:
@@ -9,11 +13,13 @@ class SQS:
 
     def send(self, queue_url, message_attributes, message_body):
         """Send message via SQS."""
+        logger.info(f"Sending message to SQS queue: {queue_url}")
         response = self.client.send_message(
             QueueUrl=queue_url,
             MessageAttributes=message_attributes,
             MessageBody=str(message_body),
         )
+        logger.info(f"Response from SQS queue: {response}")
         return response
 
 

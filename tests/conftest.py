@@ -97,6 +97,6 @@ def dss_message_body_example():
     return dss_message_body
 
 
+@pytest.fixture()
 def wiley_pdf():
     return open("tests/fixtures/wiley.pdf", "rb").read()
-    
