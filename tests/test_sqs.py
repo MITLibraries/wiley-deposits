@@ -23,10 +23,9 @@ def test_sqs_send_failure(
     sqs_client, dss_message_attributes_example, dss_message_body_example
 ):
     with pytest.raises(ClientError):
-        response = sqs_client.send(
+        sqs_client.send(
             "non-existent", dss_message_attributes_example, dss_message_body_example
         )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
 def test_create_dss_message_attributes(dss_message_attributes_example):
