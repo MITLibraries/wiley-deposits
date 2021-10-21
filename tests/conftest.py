@@ -6,6 +6,8 @@ import pytest
 import requests_mock
 from moto import mock_s3
 
+from awd.sqs import SQS
+
 
 @pytest.fixture(scope="function")
 def aws_credentials():
@@ -21,6 +23,11 @@ def mocked_s3(aws_credentials):
         s3 = boto3.client("s3", region_name="us-east-1")
         s3.create_bucket(Bucket="awd")
         yield s3
+
+
+@pytest.fixture(scope="function")
+def sqs_client():
+    return SQS()
 
 
 @pytest.fixture()
@@ -61,6 +68,33 @@ def crossref_value_dict():
 @pytest.fixture()
 def dspace_metadata():
     return json.loads(open("tests/fixtures/dspace_metadata.json", "r").read())
+
+
+@pytest.fixture()
+def dss_message_attributes_example():
+    dss_message_attributes = {
+        "PackageID": {"DataType": "String", "StringValue": "123"},
+        "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
+        "OutputQueue": {"DataType": "String", "StringValue": "DSS queue"},
+    }
+    return dss_message_attributes
+
+
+@pytest.fixture()
+def dss_message_body_example():
+    dss_message_body = {
+        "SubmissionSystem": "DSpace",
+        "CollectionHandle": "123.4/5678",
+        "MetadataLocation": "mock://bucket/456.json",
+        "Files": [
+            {
+                "BitstreamName": "456.pdf",
+                "FileLocation": "mock://bucket/456.pdf",
+                "BitstreamDescription": None,
+            }
+        ],
+    }
+    return dss_message_body
 
 
 @pytest.fixture()
