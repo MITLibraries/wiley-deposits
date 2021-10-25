@@ -14,12 +14,12 @@ def get_dois_from_spreadsheet(file):
             yield doi
 
 
-def get_crossref_work_from_doi(api_url, doi):
+def get_crossref_work_record_from_doi(api_url, doi):
     """Retrieve Crossref works based on a DOI"""
-    work = requests.get(
+    crossref_work_record = requests.get(
         f"{api_url}{doi}", params={"mailto": "dspace-lib@mit.edu"}
     ).json()
-    return work
+    return crossref_work_record
 
 
 def get_metadata_dict_from_crossref_work(work):

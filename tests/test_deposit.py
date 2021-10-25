@@ -30,7 +30,7 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_client):
             "awd",
         )
         assert (
-            "Insufficient metadata for 10.1002/nome.tadata, missing key: message"
+            "Insufficient metadata for 10.1002/nome.tadata, missing title or URL"
             in caplog.text
         )
         assert "Contents" not in s3_client.client.list_objects(Bucket="awd")

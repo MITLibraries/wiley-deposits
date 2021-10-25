@@ -9,7 +9,7 @@ def test_get_dois_from_spreadsheet():
 
 def test_get_crossref_work_from_dois(web_mock):
     doi = "10.1002/term.3131"
-    work = crossref.get_crossref_work_from_doi("http://example.com/works/", doi)
+    work = crossref.get_crossref_work_record_from_doi("http://example.com/works/", doi)
     assert work["message"]["title"] == [
         "Metal‐based nanoparticles for bone tissue engineering"
     ]
