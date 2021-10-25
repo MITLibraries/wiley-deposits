@@ -1,7 +1,10 @@
 import json
+import logging
 
 import requests
 import smart_open
+
+logger = logging.getLogger(__name__)
 
 
 def get_dois_from_spreadsheet(file):
@@ -69,3 +72,17 @@ def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
                     {"key": metadata_mapping[key], "value": value_dict[key]}
                 )
         return {"metadata": metadata}
+
+
+def validate_crossref_response(doi, crossref_work_record):
+    """Validate the Crossref work record contains sufficient metadata."""
+    validation_status = False
+    if (
+        crossref_work_record.get("message", {}).get("title") is not None
+        and crossref_work_record.get("message", {}).get("URL") is not None
+    ):
+        validation_status = True
+        logger.info(f"Sufficient metadata downloaded for {doi}")
+    else:
+        logger.error(f"Insufficient metadata for {doi}, missing title or URL")
+    return validation_status

@@ -49,3 +49,15 @@ def test_transform_dict_with_metadata_mapping_full_metadata(
         crossref_value_dict, "config/metadata_mapping.json"
     )
     assert metadata == dspace_metadata
+
+
+def test_validate_crossref_response_failure():
+    validation_status = crossref.validate_crossref_response("111.1/111", {})
+    assert validation_status is False
+
+
+def test_validate_crossref_response_success():
+    validation_status = crossref.validate_crossref_response(
+        "111.1/111", {"message": {"title": "Title", "URL": "http://example.com"}}
+    )
+    assert validation_status is True
