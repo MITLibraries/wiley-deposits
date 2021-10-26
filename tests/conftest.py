@@ -6,6 +6,7 @@ import pytest
 import requests_mock
 from moto import mock_s3
 
+from awd.s3 import S3
 from awd.sqs import SQS
 
 
@@ -18,7 +19,7 @@ def aws_credentials():
 
 
 @pytest.fixture(scope="function")
-def mocked_s3(aws_credentials):
+def s3_mock(aws_credentials):
     with mock_s3():
         s3 = boto3.client("s3", region_name="us-east-1")
         s3.create_bucket(Bucket="awd")
@@ -28,6 +29,11 @@ def mocked_s3(aws_credentials):
 @pytest.fixture(scope="function")
 def sqs_client():
     return SQS()
+
+
+@pytest.fixture(scope="function")
+def s3_client():
+    return S3()
 
 
 @pytest.fixture()
@@ -49,8 +55,21 @@ def web_mock(crossref_work_record, wiley_pdf):
             request_headers=request_headers,
         )
         m.get(
+            "http://example.com/doi/10.1002/none.0000",
+            headers={"Content-Type": "application/html; charset=UTF-8"},
+            request_headers=request_headers,
+        )
+        m.get(
             "http://example.com/works/10.1002/term.3131?mailto=dspace-lib@mit.edu",
             json=crossref_work_record,
+        )
+        m.get(
+            "http://example.com/works/10.1002/none.0000?mailto=dspace-lib@mit.edu",
+            json=crossref_work_record,
+        )
+        m.get(
+            "http://example.com/works/10.1002/nome.tadata?mailto=dspace-lib@mit.edu",
+            json={},
         )
         yield m
 

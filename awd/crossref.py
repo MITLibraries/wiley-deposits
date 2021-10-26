@@ -1,7 +1,10 @@
 import json
+import logging
 
 import requests
 import smart_open
+
+logger = logging.getLogger(__name__)
 
 
 def get_dois_from_spreadsheet(file):
@@ -11,15 +14,15 @@ def get_dois_from_spreadsheet(file):
             yield doi
 
 
-def get_crossref_work_from_doi(api_url, doi):
+def get_work_record_from_doi(api_url, doi):
     """Retrieve Crossref works based on a DOI"""
-    work = requests.get(
+    crossref_work_record = requests.get(
         f"{api_url}{doi}", params={"mailto": "dspace-lib@mit.edu"}
     ).json()
-    return work
+    return crossref_work_record
 
 
-def get_metadata_dict_from_crossref_work(work):
+def get_metadata_extract_from(work):
     """Create metadata dict from a Crossref work JSON record."""
     keys_for_dspace = [
         "author",
@@ -69,3 +72,17 @@ def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
                     {"key": metadata_mapping[key], "value": value_dict[key]}
                 )
         return {"metadata": metadata}
+
+
+def is_valid_response(doi, crossref_work_record):
+    """Validate the Crossref work record contains sufficient metadata."""
+    validation_status = False
+    if (
+        crossref_work_record.get("message", {}).get("title") is not None
+        and crossref_work_record.get("message", {}).get("URL") is not None
+    ):
+        validation_status = True
+        logger.debug(f"Sufficient metadata downloaded for {doi}")
+    else:
+        logger.error(f"Insufficient metadata for {doi}, missing title or URL")
+    return validation_status

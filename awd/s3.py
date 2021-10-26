@@ -1,4 +1,8 @@
+import logging
+
 from boto3 import client
+
+logger = logging.getLogger(__name__)
 
 
 class S3:
@@ -15,4 +19,20 @@ class S3:
             Bucket=bucket,
             Key=key,
         )
+        logger.debug(f"{key} uploaded to S3")
         return response
+
+
+def create_files_dict(file_name, metadata_content, bitstream_content):
+    """Create dict of files to upload to S3."""
+    package_files = [
+        {
+            "file_name": f"{file_name}.json",
+            "file_content": metadata_content,
+        },
+        {
+            "file_name": f"{file_name}.pdf",
+            "file_content": bitstream_content,
+        },
+    ]
+    return package_files
