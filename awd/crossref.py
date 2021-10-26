@@ -22,7 +22,7 @@ def get_work_record_from_doi(api_url, doi):
     return crossref_work_record
 
 
-def get_metadata_dict_from(work):
+def get_metadata_extract_from(work):
     """Create metadata dict from a Crossref work JSON record."""
     keys_for_dspace = [
         "author",

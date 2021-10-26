@@ -15,8 +15,8 @@ def test_get_crossref_work_from_dois(web_mock):
     ]
 
 
-def test_get_metadata_dict_from(web_mock, crossref_value_dict, crossref_work_record):
-    value_dict = crossref.get_metadata_dict_from(crossref_work_record)
+def test_get_metadata_extract_from(web_mock, crossref_value_dict, crossref_work_record):
+    value_dict = crossref.get_metadata_extract_from(crossref_work_record)
     assert value_dict == crossref_value_dict
 
 

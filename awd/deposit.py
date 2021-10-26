@@ -17,7 +17,7 @@ def deposit(doi_spreadsheet_path, metadata_url, content_url, bucket):
         crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
         if crossref.is_valid_response(doi, crossref_work_record) is False:
             continue
-        value_dict = crossref.get_metadata_dict_from(crossref_work_record)
+        value_dict = crossref.get_metadata_extract_from(crossref_work_record)
         metadata = crossref.create_dspace_metadata_from_dict(
             value_dict, "config/metadata_mapping.json"
         )
