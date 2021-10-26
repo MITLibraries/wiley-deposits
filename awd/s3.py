@@ -19,11 +19,11 @@ class S3:
             Bucket=bucket,
             Key=key,
         )
-        logger.info(f"{key} uploaded to S3")
+        logger.debug(f"{key} uploaded to S3")
         return response
 
 
-def create_package_files_dict(file_name, metadata_content, bitstream_content):
+def create_files_dict(file_name, metadata_content, bitstream_content):
     """Create dict of files to upload to S3."""
     package_files = [
         {

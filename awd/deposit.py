@@ -14,20 +14,18 @@ def deposit(doi_spreadsheet_path, metadata_url, content_url, bucket):
     s3_client = S3()
     dois = crossref.get_dois_from_spreadsheet(doi_spreadsheet_path)
     for doi in dois:
-        crossref_work_record = crossref.get_crossref_work_record_from_doi(
-            metadata_url, doi
-        )
-        if crossref.validate_crossref_response(doi, crossref_work_record) is False:
+        crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
+        if crossref.is_valid_response(doi, crossref_work_record) is False:
             continue
-        value_dict = crossref.get_metadata_dict_from_crossref_work(crossref_work_record)
+        value_dict = crossref.get_metadata_dict_from(crossref_work_record)
         metadata = crossref.create_dspace_metadata_from_dict(
             value_dict, "config/metadata_mapping.json"
         )
         wiley_response = wiley.get_wiley_response(content_url, doi)
-        if wiley.validate_wiley_response(doi, wiley_response) is False:
+        if wiley.is_valid_response(doi, wiley_response) is False:
             continue
         doi_file_name = doi.replace("/", "-")  # 10.1002/term.3131 to 10.1002-term.3131
-        package_files = s3.create_package_files_dict(
+        package_files = s3.create_files_dict(
             doi_file_name, json.dumps(metadata), wiley_response.content
         )
         try:

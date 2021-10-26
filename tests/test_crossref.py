@@ -9,16 +9,14 @@ def test_get_dois_from_spreadsheet():
 
 def test_get_crossref_work_from_dois(web_mock):
     doi = "10.1002/term.3131"
-    work = crossref.get_crossref_work_record_from_doi("http://example.com/works/", doi)
+    work = crossref.get_work_record_from_doi("http://example.com/works/", doi)
     assert work["message"]["title"] == [
         "Metal‐based nanoparticles for bone tissue engineering"
     ]
 
 
-def test_get_metadata_dict_from_crossref_work(
-    web_mock, crossref_value_dict, crossref_work_record
-):
-    value_dict = crossref.get_metadata_dict_from_crossref_work(crossref_work_record)
+def test_get_metadata_dict_from(web_mock, crossref_value_dict, crossref_work_record):
+    value_dict = crossref.get_metadata_dict_from(crossref_work_record)
     assert value_dict == crossref_value_dict
 
 
@@ -51,13 +49,13 @@ def test_transform_dict_with_metadata_mapping_full_metadata(
     assert metadata == dspace_metadata
 
 
-def test_validate_crossref_response_failure():
-    validation_status = crossref.validate_crossref_response("111.1/111", {})
+def test_is_valid_response_failure():
+    validation_status = crossref.is_valid_response("111.1/111", {})
     assert validation_status is False
 
 
-def test_validate_crossref_response_success():
-    validation_status = crossref.validate_crossref_response(
+def test_is_valid_response_success():
+    validation_status = crossref.is_valid_response(
         "111.1/111", {"message": {"title": "Title", "URL": "http://example.com"}}
     )
     assert validation_status is True
