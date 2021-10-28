@@ -90,18 +90,47 @@ def dspace_metadata():
 
 
 @pytest.fixture()
-def dss_message_attributes_example():
-    dss_message_attributes = {
+def result_message_attributes():
+    result_message_attributes = {
+        "PackageID": {"DataType": "String", "StringValue": "09876"},
+        "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
+    }
+    return result_message_attributes
+
+
+@pytest.fixture()
+def result_message_body():
+    result_message_body = {
+        "ResultType": "success",
+        "ItemHandle": "1721.1/131022",
+        "lastModified": "Thu Sep 09 17:56:39 UTC 2021",
+        "Bitstreams": [
+            {
+                "BitstreamName": "baker_report.pdf",
+                "BitstreamUUID": "a1b2c3d4e5",
+                "BitstreamChecksum": {
+                    "value": "a4e0f4930dfaff904fa3c6c85b0b8ecc",
+                    "checkSumAlgorithm": "MD5",
+                },
+            }
+        ],
+    }
+    return result_message_body
+
+
+@pytest.fixture()
+def submission_message_attributes():
+    submission_message_attributes = {
         "PackageID": {"DataType": "String", "StringValue": "123"},
         "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
         "OutputQueue": {"DataType": "String", "StringValue": "DSS queue"},
     }
-    return dss_message_attributes
+    return submission_message_attributes
 
 
 @pytest.fixture()
-def dss_message_body_example():
-    dss_message_body = {
+def submission_message_body():
+    submission_message_body = {
         "SubmissionSystem": "DSpace",
         "CollectionHandle": "123.4/5678",
         "MetadataLocation": "mock://bucket/456.json",
@@ -113,7 +142,7 @@ def dss_message_body_example():
             }
         ],
     }
-    return dss_message_body
+    return submission_message_body
 
 
 @pytest.fixture()
