@@ -27,12 +27,12 @@ def s3_mock(aws_credentials):
 
 
 @pytest.fixture(scope="function")
-def sqs_client():
+def sqs_class():
     return SQS()
 
 
 @pytest.fixture(scope="function")
-def s3_client():
+def s3_class():
     return S3()
 
 
@@ -106,7 +106,7 @@ def result_message_body():
         "lastModified": "Thu Sep 09 17:56:39 UTC 2021",
         "Bitstreams": [
             {
-                "BitstreamName": "baker_report.pdf",
+                "BitstreamName": "10.1002-term.3131.pdf",
                 "BitstreamUUID": "a1b2c3d4e5",
                 "BitstreamChecksum": {
                     "value": "a4e0f4930dfaff904fa3c6c85b0b8ecc",
@@ -133,11 +133,11 @@ def submission_message_body():
     submission_message_body = {
         "SubmissionSystem": "DSpace",
         "CollectionHandle": "123.4/5678",
-        "MetadataLocation": "mock://bucket/456.json",
+        "MetadataLocation": "s3://awd/10.1002-term.3131.json",
         "Files": [
             {
-                "BitstreamName": "456.pdf",
-                "FileLocation": "mock://bucket/456.pdf",
+                "BitstreamName": "10.1002-term.3131.pdf",
+                "FileLocation": "s3://awd/10.1002-term.3131.pdf",
                 "BitstreamDescription": None,
             }
         ],

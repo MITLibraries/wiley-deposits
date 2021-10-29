@@ -7,32 +7,30 @@ from awd import sqs
 
 
 @mock_sqs
-def test_sqs_receive_success(
-    sqs_client, result_message_attributes, result_message_body
-):
+def test_sqs_receive_success(sqs_class, result_message_attributes, result_message_body):
     sqs = boto3.resource("sqs", region_name="us-east-1")
     sqs_queue = sqs.create_queue(QueueName="mock-output-queue")
-    sqs_client.send(sqs_queue.url, {}, result_message_body)
-    messages = sqs_client.receive(sqs_queue.url)
+    sqs_class.send(sqs_queue.url, {}, result_message_body)
+    messages = sqs_class.receive(sqs_queue.url)
     for message in messages:
         assert message["Body"] == str(result_message_body)
 
 
 @mock_sqs
-def test_sqs_receive_failure(sqs_client):
+def test_sqs_receive_failure(sqs_class):
     with pytest.raises(ClientError):
-        messages = sqs_client.receive("non-existent")
+        messages = sqs_class.receive("non-existent")
         for message in messages:
             pass
 
 
 @mock_sqs
 def test_sqs_send_success(
-    sqs_client, submission_message_attributes, submission_message_body
+    sqs_class, submission_message_attributes, submission_message_body
 ):
     sqs = boto3.resource("sqs", region_name="us-east-1")
     sqs_queue = sqs.create_queue(QueueName="mock-input-queue")
-    response = sqs_client.send(
+    response = sqs_class.send(
         sqs_queue.url, submission_message_attributes, submission_message_body
     )
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -40,10 +38,10 @@ def test_sqs_send_success(
 
 @mock_sqs
 def test_sqs_send_failure(
-    sqs_client, submission_message_attributes, submission_message_body
+    sqs_class, submission_message_attributes, submission_message_body
 ):
     with pytest.raises(ClientError):
-        sqs_client.send(
+        sqs_class.send(
             "non-existent", submission_message_attributes, submission_message_body
         )
 
@@ -59,8 +57,8 @@ def test_create_dss_message_body(submission_message_body):
     dss_message_body = sqs.create_dss_message_body(
         "DSpace",
         "123.4/5678",
-        "mock://bucket/456.json",
-        "456.pdf",
-        "mock://bucket/456.pdf",
+        "s3://awd/10.1002-term.3131.json",
+        "10.1002-term.3131.pdf",
+        "s3://awd/10.1002-term.3131.pdf",
     )
     assert dss_message_body == submission_message_body
