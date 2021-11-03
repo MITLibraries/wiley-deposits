@@ -25,14 +25,18 @@ class SQS:
     def receive(self, queue_url):
         """Send message via SQS."""
         logger.debug(f"Receiving messages from SQS queue: {queue_url}")
-        response = self.client.receive_message(
-            QueueUrl=queue_url,
-        )
-        logger.debug(
-            f"{len(response['Messages'])} messages retrieved from SQS queue: {queue_url}"
-        )
-        for message in response["Messages"]:
-            yield message
+        while True:
+            response = self.client.receive_message(
+                QueueUrl=queue_url, MaxNumberOfMessages=10
+            )
+            try:
+                for message in response["Messages"]:
+                    logger.debug(
+                        f"Message retrieved from SQS queue {queue_url}: {message}"
+                    )
+                    yield message
+            except KeyError:
+                break
 
 
 def create_dss_message_attributes(package_id, submission_source, output_queue):

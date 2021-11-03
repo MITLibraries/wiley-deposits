@@ -99,8 +99,20 @@ def result_message_attributes():
 
 
 @pytest.fixture()
-def result_message_body():
-    result_message_body = {
+def result_failure_message_body():
+    result_failure_message_body = {
+        "ResultType": "error",
+        "ErrorTimestamp": "Thu Sep 09 18:32:39 UTC 2021",
+        "ErrorInfo": "Error occurred while posting item to DSpace",
+        "ExceptionMessage": "500 Server Error: Internal Server Error",
+        "ExceptionTraceback": "Full unformatted stack trace of the Exception",
+    }
+    return result_failure_message_body
+
+
+@pytest.fixture()
+def result_success_message_body():
+    result_success_message_body = {
         "ResultType": "success",
         "ItemHandle": "1721.1/131022",
         "lastModified": "Thu Sep 09 17:56:39 UTC 2021",
@@ -115,7 +127,7 @@ def result_message_body():
             }
         ],
     }
-    return result_message_body
+    return result_success_message_body
 
 
 @pytest.fixture()
