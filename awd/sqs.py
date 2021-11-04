@@ -11,6 +11,16 @@ class SQS:
     def __init__(self):
         self.client = client("sqs", region_name="us-east-1")
 
+    def delete(self, queue_url, receipt_handle):
+        """Delete message from SQS queue."""
+        logger.debug(f"Deleting {receipt_handle} from SQS queue: {queue_url}")
+        response = self.client.delete_message(
+            QueueUrl=queue_url,
+            ReceiptHandle=receipt_handle,
+        )
+        logger.debug(f"Message deleted from SQS queue: {response}")
+        return response
+
     def send(self, queue_url, message_attributes, message_body):
         """Send message via SQS."""
         logger.debug(f"Sending message to SQS queue: {queue_url}")
@@ -23,7 +33,7 @@ class SQS:
         return response
 
     def receive(self, queue_url):
-        """Send message via SQS."""
+        """Receive message via SQS."""
         logger.debug(f"Receiving messages from SQS queue: {queue_url}")
         while True:
             response = self.client.receive_message(

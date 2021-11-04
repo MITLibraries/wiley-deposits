@@ -7,6 +7,25 @@ from awd import sqs
 
 
 @mock_sqs
+def test_sqs_delete_success(
+    sqs_class, result_message_attributes, result_success_message_body
+):
+    sqs = boto3.resource("sqs", region_name="us-east-1")
+    sqs_queue = sqs.create_queue(QueueName="mock-output-queue")
+    sqs_class.send(sqs_queue.url, {}, result_success_message_body)
+    messages = sqs_class.receive(sqs_queue.url)
+    receipt_handle = next(messages)["ReceiptHandle"]
+    response = sqs_class.delete(sqs_queue.url, receipt_handle)
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+@mock_sqs
+def test_sqs_delete_failure(sqs_class):
+    with pytest.raises(ClientError):
+        sqs_class.delete("non-existent", "12345678")
+
+
+@mock_sqs
 def test_sqs_receive_success(
     sqs_class, result_message_attributes, result_success_message_body
 ):
