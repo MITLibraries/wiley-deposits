@@ -39,13 +39,13 @@ class SQS:
             response = self.client.receive_message(
                 QueueUrl=queue_url, MaxNumberOfMessages=10
             )
-            try:
+            if "Messages" in response:
                 for message in response["Messages"]:
                     logger.debug(
                         f"Message retrieved from SQS queue {queue_url}: {message}"
                     )
                     yield message
-            except KeyError:
+            else:
                 logger.debug(f"No more messages from SQS queue {queue_url}")
                 break
 
