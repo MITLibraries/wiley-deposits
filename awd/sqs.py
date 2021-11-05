@@ -46,6 +46,7 @@ class SQS:
                     )
                     yield message
             except KeyError:
+                logger.debug(f"No more messages from SQS queue {queue_url}")
                 break
 
 

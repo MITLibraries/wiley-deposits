@@ -1,8 +1,6 @@
 import logging
 
 import boto3
-import pytest
-from botocore.exceptions import ClientError
 from moto import mock_sqs
 
 from awd import listen
@@ -27,8 +25,8 @@ def test_listen_success(
         assert next(messages, None) is None
 
 
-def test_listen_failure():
-    with pytest.raises(ClientError):
-        messages = listen.listen("non-existent")
-        for message in messages:
-            pass
+@mock_sqs
+def test_listen_failure(caplog):
+    with caplog.at_level(logging.DEBUG):
+        listen.listen("non-existent")
+        assert "Failure while retrieving SQS messages" in caplog.text
