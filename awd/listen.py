@@ -23,3 +23,7 @@ def listen(sqs_output_queue_url):
         logger.error(
             f"Failure while retrieving SQS messages, {e.response['Error']['Message']}"
         )
+
+
+if __name__ == "__main__":
+    listen()
