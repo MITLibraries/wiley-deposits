@@ -50,7 +50,7 @@ def deposit(
             doi_file_name, "wiley", sqs_output_url
         )
         dss_message_body = sqs.create_dss_message_body(
-            "DSpace",
+            "DSpace@MIT",
             collection_handle,
             metadata_s3_uri,
             f"{doi_file_name}.pdf",

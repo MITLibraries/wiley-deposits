@@ -76,7 +76,7 @@ def test_create_dss_message_attributes(submission_message_attributes):
 
 def test_create_dss_message_body(submission_message_body):
     dss_message_body = sqs.create_dss_message_body(
-        "DSpace",
+        "DSpace@MIT",
         "123.4/5678",
         "s3://awd/10.1002-term.3131.json",
         "10.1002-term.3131.pdf",

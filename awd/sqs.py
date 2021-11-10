@@ -1,3 +1,4 @@
+import json
 import logging
 
 from boto3 import client
@@ -80,4 +81,4 @@ def create_dss_message_body(
             }
         ],
     }
-    return dss_message_body
+    return json.dumps(dss_message_body)
