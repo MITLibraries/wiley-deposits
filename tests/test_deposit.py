@@ -19,8 +19,9 @@ def test_deposit_success(
         "http://example.com/works/",
         "http://example.com/doi/",
         "awd",
-        "https://queue.amazonaws.com/123456789012/mock-input-queue",
-        "https://queue.amazonaws.com/123456789012/mock-output-queue",
+        "https://queue.amazonaws.com/123456789012/",
+        "mock-input-queue",
+        "mock-output-queue",
         "123.4/5678",
     )
     uploaded_metadata = s3_class.client.get_object(
@@ -32,7 +33,7 @@ def test_deposit_success(
     )
     assert uploaded_bitstream["ResponseMetadata"]["HTTPStatusCode"] == 200
     messages = sqs_class.receive(
-        "https://queue.amazonaws.com/123456789012/mock-input-queue"
+        "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
     )
     for message in messages:
         assert message["Body"] == str(submission_message_body)
@@ -46,6 +47,7 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class):
             "http://example.com/works/",
             "http://example.com/doi/",
             "awd",
+            "https://queue.amazonaws.com/123456789012/",
             "mock-input-queue",
             "mock-output-queue",
             "123.4/5678",
@@ -65,6 +67,7 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class):
             "http://example.com/works/",
             "http://example.com/doi/",
             "awd",
+            "https://queue.amazonaws.com/123456789012/",
             "mock-input-queue",
             "mock-output-queue",
             "123.4/5678",
@@ -81,6 +84,7 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class):
             "http://example.com/works/",
             "http://example.com/doi/",
             "not-a-bucket",
+            "https://queue.amazonaws.com/123456789012/",
             "mock-input-queue",
             "mock-output-queue",
             "123.4/5678",
