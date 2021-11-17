@@ -4,6 +4,7 @@ import os
 import boto3
 import pytest
 import requests_mock
+from click.testing import CliRunner
 from moto import mock_s3
 
 from awd.s3 import S3
@@ -128,6 +129,11 @@ def result_success_message_body():
         ],
     }
     return result_success_message_body
+
+
+@pytest.fixture(scope="function")
+def runner():
+    return CliRunner()
 
 
 @pytest.fixture()

@@ -1,6 +1,7 @@
 import json
 import logging
 
+import click
 from botocore.exceptions import ClientError
 
 from awd import crossref, s3, sqs, wiley
@@ -9,6 +10,47 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
+@click.command()
+@click.option(
+    "--doi_spreadsheet_path",
+    required=True,
+    help="The path of the spreadsheet containing DOIs to be searched.",
+)
+@click.option(
+    "--metadata_url",
+    required=True,
+    help="The URL of the metadata records.",
+)
+@click.option(
+    "--content_url",
+    required=True,
+    help="The URL of the content files.",
+)
+@click.option(
+    "--bucket",
+    required=True,
+    help="The bucket to which content and metadata files will be uploaded.",
+)
+@click.option(
+    "--sqs_base_url",
+    required=True,
+    help="The base URL of the SQS queues.",
+)
+@click.option(
+    "--sqs_input_queue",
+    required=True,
+    help="The SQS queue to which submission messages will be sent.",
+)
+@click.option(
+    "--sqs_output_queue",
+    required=True,
+    help="The SQS queue from which results messages will be received.",
+)
+@click.option(
+    "--collection_handle",
+    required=True,
+    help="The handle of the DSpace collection to which items will be added.",
+)
 def deposit(
     doi_spreadsheet_path,
     metadata_url,
@@ -63,7 +105,7 @@ def deposit(
             dss_message_attributes,
             dss_message_body,
         )
-    return "Submission process has completed"
+    logger.info("Submission process has completed")
 
 
 if __name__ == "__main__":
