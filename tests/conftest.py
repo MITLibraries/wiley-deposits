@@ -143,7 +143,7 @@ def submission_message_attributes():
 @pytest.fixture()
 def submission_message_body():
     submission_message_body = {
-        "SubmissionSystem": "DSpace",
+        "SubmissionSystem": "DSpace@MIT",
         "CollectionHandle": "123.4/5678",
         "MetadataLocation": "s3://awd/10.1002-term.3131.json",
         "Files": [
@@ -154,7 +154,7 @@ def submission_message_body():
             }
         ],
     }
-    return submission_message_body
+    return json.dumps(submission_message_body)
 
 
 @pytest.fixture()

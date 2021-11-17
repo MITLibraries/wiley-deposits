@@ -14,8 +14,9 @@ def deposit(
     metadata_url,
     content_url,
     bucket,
-    sqs_input_url,
-    sqs_output_url,
+    sqs_base_url,
+    sqs_input_queue,
+    sqs_output_queue,
     collection_handle,
 ):
     s3_client = s3.S3()
@@ -47,16 +48,21 @@ def deposit(
         bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
         metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
         dss_message_attributes = sqs.create_dss_message_attributes(
-            doi_file_name, "wiley", sqs_output_url
+            doi_file_name, "wiley", sqs_output_queue
         )
         dss_message_body = sqs.create_dss_message_body(
-            "DSpace",
+            "DSpace@MIT",
             collection_handle,
             metadata_s3_uri,
             f"{doi_file_name}.pdf",
             bitstream_s3_uri,
         )
-        sqs_client.send(sqs_input_url, dss_message_attributes, dss_message_body)
+        sqs_client.send(
+            sqs_base_url,
+            sqs_input_queue,
+            dss_message_attributes,
+            dss_message_body,
+        )
     return "Submission process has completed"
 
 

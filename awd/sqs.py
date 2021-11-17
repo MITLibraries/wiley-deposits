@@ -1,3 +1,4 @@
+import json
 import logging
 
 from boto3 import client
@@ -11,42 +12,44 @@ class SQS:
     def __init__(self):
         self.client = client("sqs", region_name="us-east-1")
 
-    def delete(self, queue_url, receipt_handle):
+    def delete(self, sqs_base_url, queue, receipt_handle):
         """Delete message from SQS queue."""
-        logger.debug(f"Deleting {receipt_handle} from SQS queue: {queue_url}")
+        logger.debug(f"Deleting {receipt_handle} from SQS queue: {queue}")
         response = self.client.delete_message(
-            QueueUrl=queue_url,
+            QueueUrl=f"{sqs_base_url}{queue}",
             ReceiptHandle=receipt_handle,
         )
         logger.debug(f"Message deleted from SQS queue: {response}")
         return response
 
-    def send(self, queue_url, message_attributes, message_body):
+    def send(self, sqs_base_url, queue, message_attributes, message_body):
         """Send message via SQS."""
-        logger.debug(f"Sending message to SQS queue: {queue_url}")
+        logger.debug(f"Sending message to SQS queue: {queue}")
         response = self.client.send_message(
-            QueueUrl=queue_url,
+            QueueUrl=f"{sqs_base_url}{queue}",
             MessageAttributes=message_attributes,
             MessageBody=str(message_body),
         )
         logger.debug(f"Response from SQS queue: {response}")
         return response
 
-    def receive(self, queue_url):
+    def receive(
+        self,
+        sqs_base_url,
+        queue,
+    ):
         """Receive message via SQS."""
-        logger.debug(f"Receiving messages from SQS queue: {queue_url}")
+        logger.debug(f"Receiving messages from SQS queue: {queue}")
         while True:
             response = self.client.receive_message(
-                QueueUrl=queue_url, MaxNumberOfMessages=10
+                QueueUrl=f"{sqs_base_url}{queue}", MaxNumberOfMessages=10
             )
             if "Messages" in response:
                 for message in response["Messages"]:
-                    logger.debug(
-                        f"Message retrieved from SQS queue {queue_url}: {message}"
-                    )
+                    logger.debug(f"Message retrieved from SQS queue {queue}: {message}")
                     yield message
             else:
-                logger.debug(f"No more messages from SQS queue {queue_url}")
+                logger.debug(f"No more messages from SQS queue {queue}")
                 break
 
 
@@ -80,4 +83,4 @@ def create_dss_message_body(
             }
         ],
     }
-    return dss_message_body
+    return json.dumps(dss_message_body)
