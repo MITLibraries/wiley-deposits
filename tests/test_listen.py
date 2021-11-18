@@ -3,14 +3,14 @@ import logging
 import boto3
 from moto import mock_sqs
 
-from awd import listen
+from awd.listen import listen
 
 logger = logging.getLogger(__name__)
 
 
 @mock_sqs
 def test_listen_success(
-    caplog, sqs_class, result_success_message_body, result_failure_message_body
+    caplog, sqs_class, result_success_message_body, result_failure_message_body, runner
 ):
     with caplog.at_level(logging.DEBUG):
         sqs = boto3.resource("sqs", region_name="us-east-1")
@@ -27,22 +27,36 @@ def test_listen_success(
             {},
             result_success_message_body,
         )
-        listen.listen(
-            "https://queue.amazonaws.com/123456789012/",
-            "mock-output-queue",
+        result = runner.invoke(
+            listen,
+            [
+                "--sqs_base_url",
+                "https://queue.amazonaws.com/123456789012/",
+                "--sqs_output_queue",
+                "mock-output-queue",
+            ],
         )
+        assert result.exit_code == 0
         assert str(result_failure_message_body) in caplog.text
         assert str(result_success_message_body) in caplog.text
         assert "Messages received and deleted from output queue" in caplog.text
         messages = sqs_class.receive(
-            "https://queue.amazonaws.com/123456789012/",
-            "mock-output-queue",
+            "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
         )
         assert next(messages, None) is None
 
 
 @mock_sqs
-def test_listen_failure(caplog):
+def test_listen_failure(caplog, runner):
     with caplog.at_level(logging.DEBUG):
-        listen.listen("https://queue.amazonaws.com/123456789012/", "non-existent")
+        result = runner.invoke(
+            listen,
+            [
+                "--sqs_base_url",
+                "https://queue.amazonaws.com/123456789012/",
+                "--sqs_output_queue",
+                "non-existent",
+            ],
+        )
+        assert result.exit_code == 0
         assert "Failure while retrieving SQS messages" in caplog.text

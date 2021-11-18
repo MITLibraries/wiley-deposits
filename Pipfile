@@ -24,4 +24,5 @@ moto = "*"
 python_version = "3.9"
 
 [scripts]
-awd = "python -c \"from awd.deposit import deposit; deposit()\""
+deposit = "python -c \"from awd.deposit import deposit; deposit()\""
+listen = "python -c \"from awd.listen import listen; listen()\""

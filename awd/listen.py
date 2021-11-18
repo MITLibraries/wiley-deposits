@@ -1,5 +1,6 @@
 import logging
 
+import click
 from botocore.exceptions import ClientError
 
 from awd.sqs import SQS
@@ -8,6 +9,17 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
+@click.command()
+@click.option(
+    "--sqs_base_url",
+    required=True,
+    help="The base URL of the SQS queues.",
+)
+@click.option(
+    "--sqs_output_queue",
+    required=True,
+    help="The SQS queue from which results messages will be received.",
+)
 def listen(sqs_base_url, sqs_output_queue):
     sqs = SQS()
     try:
