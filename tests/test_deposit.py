@@ -1,13 +1,14 @@
 import logging
 
 import boto3
-from moto import mock_sqs
+from moto import mock_ses, mock_sqs
 
 from awd.deposit import deposit
 
 logger = logging.getLogger(__name__)
 
 
+@mock_ses
 @mock_sqs
 def test_deposit_success(
     caplog, web_mock, s3_mock, s3_class, sqs_class, submission_message_body, runner
@@ -15,6 +16,8 @@ def test_deposit_success(
     with caplog.at_level(logging.DEBUG):
         sqs = boto3.resource("sqs", region_name="us-east-1")
         sqs.create_queue(QueueName="mock-input-queue")
+        ses_client = boto3.client("ses", region_name="us-east-1")
+        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         result = runner.invoke(
             deposit,
             [
@@ -34,6 +37,10 @@ def test_deposit_success(
                 "mock-output-queue",
                 "--collection_handle",
                 "123.4/5678",
+                "--log_source_email",
+                "noreply@example.com",
+                "--log_recipient_email",
+                "mock@mock.mock",
             ],
         )
         assert result.exit_code == 0
@@ -51,10 +58,14 @@ def test_deposit_success(
         for message in messages:
             assert message["Body"] == submission_message_body
         assert "Submission process has completed" in caplog.text
+        assert "Logs sent to" in caplog.text
 
 
+@mock_ses
 def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
+        ses_client = boto3.client("ses", region_name="us-east-1")
+        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         result = runner.invoke(
             deposit,
             [
@@ -74,6 +85,10 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
                 "mock-output-queue",
                 "--collection_handle",
                 "123.4/5678",
+                "--log_source_email",
+                "noreply@example.com",
+                "--log_recipient_email",
+                "mock@mock.mock",
             ],
         )
         assert result.exit_code == 0
@@ -83,10 +98,14 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
         )
         assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
         assert "Submission process has completed" in caplog.text
+        assert "Logs sent to" in caplog.text
 
 
+@mock_ses
 def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
+        ses_client = boto3.client("ses", region_name="us-east-1")
+        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         result = runner.invoke(
             deposit,
             [
@@ -106,16 +125,24 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
                 "mock-output-queue",
                 "--collection_handle",
                 "123.4/5678",
+                "--log_source_email",
+                "noreply@example.com",
+                "--log_recipient_email",
+                "mock@mock.mock",
             ],
         )
         assert result.exit_code == 0
         assert "A PDF could not be retrieved for DOI: 10.1002/none.0000" in caplog.text
         assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
         assert "Submission process has completed" in caplog.text
+        assert "Logs sent to" in caplog.text
 
 
+@mock_ses
 def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
+        ses_client = boto3.client("ses", region_name="us-east-1")
+        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         result = runner.invoke(
             deposit,
             [
@@ -135,9 +162,14 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
                 "mock-output-queue",
                 "--collection_handle",
                 "123.4/5678",
+                "--log_source_email",
+                "noreply@example.com",
+                "--log_recipient_email",
+                "mock@mock.mock",
             ],
         )
         assert result.exit_code == 0
         assert "Upload failed: 10.1002-term.3131.json" in caplog.text
         assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
         assert "Submission process has completed" in caplog.text
+        assert "Logs sent to" in caplog.text
