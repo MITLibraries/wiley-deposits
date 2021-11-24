@@ -1,13 +1,20 @@
+import io
 import json
 import logging
+from datetime import datetime
 
 import click
 from botocore.exceptions import ClientError
 
-from awd import crossref, s3, sqs, wiley
+from awd import crossref, s3, ses, sqs, wiley
 
+stream = io.StringIO()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.ERROR,
+    handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
+)
 
 
 @click.command()
@@ -51,6 +58,17 @@ logging.basicConfig(level=logging.INFO)
     required=True,
     help="The handle of the DSpace collection to which items will be added.",
 )
+@click.option(
+    "--log_source_email",
+    required=True,
+    help="The email address sending the logs.",
+)
+@click.option(
+    "--log_recipient_email",
+    required=True,
+    multiple=True,
+    help="The email address receiving the logs. Repeatable",
+)
 def deposit(
     doi_spreadsheet_path,
     metadata_url,
@@ -60,7 +78,10 @@ def deposit(
     sqs_input_queue,
     sqs_output_queue,
     collection_handle,
+    log_source_email,
+    log_recipient_email,
 ):
+    date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     s3_client = s3.S3()
     sqs_client = sqs.SQS()
     dois = crossref.get_dois_from_spreadsheet(doi_spreadsheet_path)
@@ -106,6 +127,22 @@ def deposit(
             dss_message_body,
         )
     logger.info("Submission process has completed")
+
+    ses_client = ses.SES()
+    message = ses_client.create_email(
+        f"Automated Wiley deposit errors {date}",
+        stream.getvalue(),
+        f"{date}_submission_log.txt",
+    )
+    try:
+        ses_client.send_email(
+            log_source_email,
+            list(log_recipient_email),
+            message,
+        )
+        logger.info(f"Logs sent to {list(log_recipient_email)}")
+    except ClientError as e:
+        logger.error(f"Failed to send logs: {e.response['Error']['Message']}")
 
 
 if __name__ == "__main__":

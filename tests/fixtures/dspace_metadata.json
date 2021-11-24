@@ -1,5 +1,6 @@
 {
-  "metadata": [{
+  "metadata": [
+    {
       "key": "dc.contributor.author",
       "value": "Eivazzadeh‐Keihan, Reza"
     },
@@ -68,7 +69,7 @@
       "value": "2020-09-30"
     },
     {
-      "key": "dc.langauge",
+      "key": "dc.language",
       "value": "en"
     },
     {

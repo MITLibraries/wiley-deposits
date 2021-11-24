@@ -42,7 +42,9 @@ class SQS:
         logger.debug(f"Receiving messages from SQS queue: {queue}")
         while True:
             response = self.client.receive_message(
-                QueueUrl=f"{sqs_base_url}{queue}", MaxNumberOfMessages=10
+                QueueUrl=f"{sqs_base_url}{queue}",
+                MaxNumberOfMessages=10,
+                MessageAttributeNames=["All"],
             )
             if "Messages" in response:
                 for message in response["Messages"]:

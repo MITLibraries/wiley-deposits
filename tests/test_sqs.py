@@ -15,7 +15,7 @@ def test_sqs_delete_success(
     sqs_class.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-output-queue",
-        {},
+        result_message_attributes,
         result_success_message_body,
     )
     messages = sqs_class.receive(
@@ -45,7 +45,7 @@ def test_sqs_receive_success(
     sqs_class.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-output-queue",
-        {},
+        result_message_attributes,
         result_success_message_body,
     )
     messages = sqs_class.receive(
@@ -53,6 +53,7 @@ def test_sqs_receive_success(
     )
     for message in messages:
         assert message["Body"] == str(result_success_message_body)
+        assert message["MessageAttributes"] == result_message_attributes
 
 
 @mock_sqs
