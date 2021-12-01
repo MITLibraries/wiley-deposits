@@ -5,7 +5,7 @@ import boto3
 import pytest
 import requests_mock
 from click.testing import CliRunner
-from moto import mock_s3
+from moto import mock_s3, mock_ssm
 
 from awd.s3 import S3
 from awd.sqs import SQS
@@ -88,6 +88,18 @@ def crossref_value_dict():
 @pytest.fixture()
 def dspace_metadata():
     return json.loads(open("tests/fixtures/dspace_metadata.json", "r").read())
+
+
+@pytest.fixture(scope="function")
+def mocked_ssm(aws_credentials):
+    with mock_ssm():
+        ssm = boto3.client("ssm", region_name="us-east-1")
+        ssm.put_parameter(
+            Name="/test/example/collection_handle",
+            Value="111.1/111",
+            Type="SecureString",
+        )
+        yield ssm
 
 
 @pytest.fixture()
