@@ -5,6 +5,7 @@ from datetime import datetime
 import click
 from botocore.exceptions import ClientError
 
+from awd import config
 from awd.ses import SES
 from awd.sqs import SQS
 
@@ -22,22 +23,26 @@ logging.getLogger("botocore").setLevel(logging.ERROR)
 @click.option(
     "--sqs_base_url",
     required=True,
+    default=config.SQS_BASE_URL,
     help="The base URL of the SQS queues.",
 )
 @click.option(
     "--sqs_output_queue",
     required=True,
+    default=config.SQS_OUTPUT_QUEUE,
     help="The SQS queue from which results messages will be received.",
 )
 @click.option(
     "--log_source_email",
     required=True,
+    default=config.LOG_SOURCE_EMAIL,
     help="The email address sending the logs.",
 )
 @click.option(
     "--log_recipient_email",
     required=True,
     multiple=True,
+    default=config.LOG_RECIPIENT_EMAIL,
     help="The email address receiving the logs. Repeatable",
 )
 def listen(sqs_base_url, sqs_output_queue, log_source_email, log_recipient_email):

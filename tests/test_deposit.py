@@ -21,7 +21,7 @@ def test_deposit_success(
         result = runner.invoke(
             deposit,
             [
-                "--doi_spreadsheet_path",
+                "--doi_file_path",
                 "tests/fixtures/doi_success.csv",
                 "--metadata_url",
                 "http://example.com/works/",
@@ -69,7 +69,7 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
         result = runner.invoke(
             deposit,
             [
-                "--doi_spreadsheet_path",
+                "--doi_file_path",
                 "tests/fixtures/doi_insufficient_metadata.csv",
                 "--metadata_url",
                 "http://example.com/works/",
@@ -109,7 +109,7 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
         result = runner.invoke(
             deposit,
             [
-                "--doi_spreadsheet_path",
+                "--doi_file_path",
                 "tests/fixtures/doi_pdf_unavailable.csv",
                 "--metadata_url",
                 "http://example.com/works/",
@@ -146,7 +146,7 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
         result = runner.invoke(
             deposit,
             [
-                "--doi_spreadsheet_path",
+                "--doi_file_path",
                 "tests/fixtures/doi_success.csv",
                 "--metadata_url",
                 "http://example.com/works/",
