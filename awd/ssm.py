@@ -3,7 +3,10 @@ from boto3 import client
 
 class SSM:
     """An SSM class that provides a generic boto3 SSM client with specific SSM
-    functionality necessary for automated Wiley deposits."""
+    functionality necessary for automated Wiley deposits. SSM stands for Simple
+    Systems Manager (SSM), now known as AWS Systems Manager, but the SSM acronym is
+    still used by boto3. This service contains Parameter Store, which is using for
+    storing values that can be retrieved via an SSM client."""
 
     def __init__(self):
         self.client = client("ssm", region_name="us-east-1")
