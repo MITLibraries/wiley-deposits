@@ -6,7 +6,7 @@ from datetime import datetime
 import click
 from botocore.exceptions import ClientError
 
-from awd import crossref, s3, ses, sqs, wiley
+from awd import config, crossref, s3, ses, sqs, wiley
 
 stream = io.StringIO()
 logger = logging.getLogger(__name__)
@@ -19,58 +19,68 @@ logging.basicConfig(
 
 @click.command()
 @click.option(
-    "--doi_spreadsheet_path",
+    "--doi_file_path",
     required=True,
+    default=config.DOI_FILE_PATH,
     help="The path of the spreadsheet containing DOIs to be searched.",
 )
 @click.option(
     "--metadata_url",
     required=True,
+    default=config.METADATA_URL,
     help="The URL of the metadata records.",
 )
 @click.option(
     "--content_url",
     required=True,
+    default=config.CONTENT_URL,
     help="The URL of the content files.",
 )
 @click.option(
     "--bucket",
     required=True,
+    default=config.BUCKET,
     help="The bucket to which content and metadata files will be uploaded.",
 )
 @click.option(
     "--sqs_base_url",
     required=True,
+    default=config.SQS_BASE_URL,
     help="The base URL of the SQS queues.",
 )
 @click.option(
     "--sqs_input_queue",
     required=True,
+    default=config.SQS_INPUT_QUEUE,
     help="The SQS queue to which submission messages will be sent.",
 )
 @click.option(
     "--sqs_output_queue",
     required=True,
+    default=config.SQS_OUTPUT_QUEUE,
     help="The SQS queue from which results messages will be received.",
 )
 @click.option(
     "--collection_handle",
     required=True,
+    default=config.COLLECTION_HANDLE,
     help="The handle of the DSpace collection to which items will be added.",
 )
 @click.option(
     "--log_source_email",
     required=True,
+    default=config.LOG_SOURCE_EMAIL,
     help="The email address sending the logs.",
 )
 @click.option(
     "--log_recipient_email",
     required=True,
     multiple=True,
+    default=config.LOG_RECIPIENT_EMAIL,
     help="The email address receiving the logs. Repeatable",
 )
 def deposit(
-    doi_spreadsheet_path,
+    doi_file_path,
     metadata_url,
     content_url,
     bucket,
@@ -84,7 +94,7 @@ def deposit(
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     s3_client = s3.S3()
     sqs_client = sqs.SQS()
-    dois = crossref.get_dois_from_spreadsheet(doi_spreadsheet_path)
+    dois = crossref.get_dois_from_spreadsheet(doi_file_path)
     for doi in dois:
         crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
         if crossref.is_valid_response(doi, crossref_work_record) is False:
