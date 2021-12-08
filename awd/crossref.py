@@ -74,6 +74,19 @@ def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
         return {"metadata": metadata}
 
 
+def is_valid_dspace_metadata(dspace_metadata):
+    """Validate that the metadata follows the format expected by DSpace."""
+    validation_status = False
+    if dspace_metadata.get("metadata") is not None:
+        for element in dspace_metadata["metadata"]:
+            if element.get("key") is not None and element.get("value") is not None:
+                validation_status = True
+        logger.debug("Valid DSpace metadata generated")
+    else:
+        logger.error(f"Invalid DSpace metadata generated: {dspace_metadata}")
+    return validation_status
+
+
 def is_valid_response(doi, crossref_work_record):
     """Validate the Crossref work record contains sufficient metadata."""
     validation_status = False
