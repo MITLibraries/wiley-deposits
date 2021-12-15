@@ -77,9 +77,28 @@ def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
 def is_valid_dspace_metadata(dspace_metadata):
     """Validate that the metadata follows the format expected by DSpace."""
     validation_status = False
+    approved_metadata_fields = [
+        "dc.contributor.author",
+        "dc.relation.journal",
+        "dc.identifier.issn",
+        "mit.journal.issue",
+        "dc.date.issued",
+        "dc.language",
+        "dc.title.alternative",
+        "dc.publisher",
+        "dc.title.alternative",
+        "dc.title.alternative",
+        "dc.title",
+        "dc.relation.isversionof",
+        "mit.journal.volume",
+    ]
     if dspace_metadata.get("metadata") is not None:
         for element in dspace_metadata["metadata"]:
-            if element.get("key") is not None and element.get("value") is not None:
+            if (
+                element.get("key") is not None
+                and element.get("value") is not None
+                and element.get("key") in approved_metadata_fields
+            ):
                 validation_status = True
         logger.debug("Valid DSpace metadata generated")
     else:
