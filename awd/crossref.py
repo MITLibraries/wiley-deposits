@@ -74,6 +74,36 @@ def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
         return {"metadata": metadata}
 
 
+def is_valid_dspace_metadata(dspace_metadata):
+    """Validate that the metadata follows the format expected by DSpace."""
+    approved_metadata_fields = [
+        "dc.contributor.author",
+        "dc.relation.journal",
+        "dc.identifier.issn",
+        "mit.journal.issue",
+        "dc.date.issued",
+        "dc.language",
+        "dc.title.alternative",
+        "dc.publisher",
+        "dc.title",
+        "dc.relation.isversionof",
+        "mit.journal.volume",
+    ]
+    is_valid = False
+    if dspace_metadata.get("metadata") is not None:
+        for element in dspace_metadata["metadata"]:
+            if (
+                element.get("key") is not None
+                and element.get("value") is not None
+                and element.get("key") in approved_metadata_fields
+            ):
+                is_valid = True
+        logger.debug("Valid DSpace metadata generated")
+    else:
+        logger.error(f"Invalid DSpace metadata generated: {dspace_metadata}")
+    return is_valid
+
+
 def is_valid_response(doi, crossref_work_record):
     """Validate the Crossref work record contains sufficient metadata."""
     validation_status = False

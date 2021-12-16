@@ -49,6 +49,25 @@ def test_transform_dict_with_metadata_mapping_full_metadata(
     assert metadata == dspace_metadata
 
 
+def test_is_valid_dspace_metadata_success():
+    validation_status = crossref.is_valid_dspace_metadata(
+        {"metadata": [{"key": "dc.title", "value": "123"}]}
+    )
+    assert validation_status is True
+
+
+def test_is_valid_dspace_metadata_no_metadata():
+    validation_status = crossref.is_valid_dspace_metadata({})
+    assert validation_status is False
+
+
+def test_is_valid_dspace_metadata_incorrect_fields():
+    validation_status = crossref.is_valid_dspace_metadata(
+        {"metadata": [{"key": "dc.example", "value": "123"}]}
+    )
+    assert validation_status is False
+
+
 def test_is_valid_response_failure():
     validation_status = crossref.is_valid_response("111.1/111", {})
     assert validation_status is False

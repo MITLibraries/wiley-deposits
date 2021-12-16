@@ -103,6 +103,8 @@ def deposit(
         metadata = crossref.create_dspace_metadata_from_dict(
             value_dict, "config/metadata_mapping.json"
         )
+        if crossref.is_valid_dspace_metadata(metadata) is False:
+            continue
         wiley_response = wiley.get_wiley_response(content_url, doi)
         if wiley.is_valid_response(doi, wiley_response) is False:
             continue
