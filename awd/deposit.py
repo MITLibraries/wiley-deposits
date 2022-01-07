@@ -6,7 +6,7 @@ from datetime import datetime
 import click
 from botocore.exceptions import ClientError
 
-from awd import config, crossref, s3, ses, sqs, wiley
+from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
 
 stream = io.StringIO()
 logger = logging.getLogger(__name__)
@@ -23,6 +23,12 @@ logging.basicConfig(
     required=True,
     default=config.DOI_FILE_PATH,
     help="The path of the spreadsheet containing DOIs to be searched.",
+)
+@click.option(
+    "--doi_table",
+    required=True,
+    default=config.DOI_TABLE,
+    help="The DynamoDB table containing the state of DOIs in the workflow.",
 )
 @click.option(
     "--metadata_url",
@@ -81,6 +87,7 @@ logging.basicConfig(
 )
 def deposit(
     doi_file_path,
+    doi_table,
     metadata_url,
     content_url,
     bucket,
@@ -94,19 +101,36 @@ def deposit(
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     s3_client = s3.S3()
     sqs_client = sqs.SQS()
+    dynamodb_client = dynamodb.DynamoDB()
     dois = crossref.get_dois_from_spreadsheet(doi_file_path)
+    doi_items = dynamodb_client.retrieve_doi_items_from_database(doi_table)
     for doi in dois:
+        if dynamodb.doi_to_be_added(doi, doi_items):
+            dynamodb_client.add_doi_item_to_database(doi_table, doi)
+        elif dynamodb.doi_to_be_retried(doi, doi_items) is False:
+            continue
+        dynamodb_client.update_doi_item_status_in_database(doi_table, doi, "Processing")
+        dynamodb_client.update_doi_item_attempts_in_database(doi_table, doi)
         crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
         if crossref.is_valid_response(doi, crossref_work_record) is False:
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, "Failed, will retry"
+            )
             continue
         value_dict = crossref.get_metadata_extract_from(crossref_work_record)
         metadata = crossref.create_dspace_metadata_from_dict(
             value_dict, "config/metadata_mapping.json"
         )
         if crossref.is_valid_dspace_metadata(metadata) is False:
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, "Failed, will retry"
+            )
             continue
         wiley_response = wiley.get_wiley_response(content_url, doi)
         if wiley.is_valid_response(doi, wiley_response) is False:
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, "Failed, will retry"
+            )
             continue
         doi_file_name = doi.replace("/", "-")  # 10.1002/term.3131 to 10.1002-term.3131
         files_dict = s3.create_files_dict(
@@ -118,6 +142,9 @@ def deposit(
         except ClientError as e:
             logger.error(
                 f"Upload failed: {file['file_name']}, {e.response['Error']['Message']}"
+            )
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, "Failed, will retry"
             )
             continue
         bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"

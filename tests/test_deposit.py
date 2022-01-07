@@ -1,13 +1,14 @@
 import logging
 
 import boto3
-from moto import mock_ses, mock_sqs
+from moto import mock_dynamodb2, mock_ses, mock_sqs
 
 from awd.deposit import deposit
 
 logger = logging.getLogger(__name__)
 
 
+@mock_dynamodb2
 @mock_ses
 @mock_sqs
 def test_deposit_success(
@@ -18,11 +19,23 @@ def test_deposit_success(
         sqs.create_queue(QueueName="mock-input-queue")
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_success.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -61,16 +74,29 @@ def test_deposit_success(
         assert "Logs sent to" in caplog.text
 
 
+@mock_dynamodb2
 @mock_ses
 def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_insufficient_metadata.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -101,16 +127,29 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
         assert "Logs sent to" in caplog.text
 
 
+@mock_dynamodb2
 @mock_ses
 def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_pdf_unavailable.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -138,16 +177,29 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
         assert "Logs sent to" in caplog.text
 
 
+@mock_dynamodb2
 @mock_ses
 def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_success.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
