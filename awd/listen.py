@@ -83,18 +83,16 @@ def listen(
                     doi_table, doi, retry_threshold
                 ):
                     dynamodb_client.update_doi_item_status_in_database(
-                        doi_table, doi, "Failed after too many attempts"
+                        doi_table, doi, 4
                     )
                 else:
                     dynamodb_client.update_doi_item_status_in_database(
-                        doi_table, doi, "Failed, will retry"
+                        doi_table, doi, 3
                     )
             else:
                 logger.info(f'DOI: {doi}, Result: {message.get("Body")}')
                 sqs.delete(sqs_base_url, sqs_output_queue, message["ReceiptHandle"])
-                dynamodb_client.update_doi_item_status_in_database(
-                    doi_table, doi, "Success"
-                )
+                dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 2)
         logger.debug("Messages received and deleted from output queue")
     except ClientError as e:
         logger.error(

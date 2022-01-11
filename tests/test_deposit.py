@@ -3,7 +3,7 @@ import logging
 import boto3
 from moto import mock_dynamodb2, mock_ses, mock_sqs
 
-from awd.deposit import deposit
+from awd.deposit import deposit, doi_to_be_added, doi_to_be_retried
 
 logger = logging.getLogger(__name__)
 
@@ -225,3 +225,27 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
         assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
+
+
+def test_doi_to_be_added_true():
+    doi_items = [{"doi": "111.1/111"}]
+    validation_status = doi_to_be_added("222.2/2222", doi_items)
+    assert validation_status is True
+
+
+def test_doi_to_be_added_false():
+    doi_items = [{"doi": "111.1/1111"}]
+    validation_status = doi_to_be_added("111.1/1111", doi_items)
+    assert validation_status is False
+
+
+def test_doi_to_be_retried_true():
+    doi_items = [{"doi": "111.1/111", "status": "Failed, will retry"}]
+    validation_status = doi_to_be_retried("111.1/111", doi_items)
+    assert validation_status is True
+
+
+def test_doi_to_be_retried_false():
+    doi_items = [{"doi": "111.1/111", "status": "Success"}]
+    validation_status = doi_to_be_retried("111.1/111", doi_items)
+    assert validation_status is False

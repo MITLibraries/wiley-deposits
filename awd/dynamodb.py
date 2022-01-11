@@ -66,35 +66,27 @@ class DynamoDB:
         self,
         doi_table,
         doi,
-        status,
+        status_enum,
     ):
         """Update status for DOI item in database."""
+        status_enums = {
+            1: "Processing",
+            2: "Success",
+            3: "Failed, will retry",
+            4: "Failed after too many attempts",
+        }
         item = self.client.get_item(
             TableName=doi_table,
             Key={"doi": {"S": doi}},
         )
-        item["Item"]["status"]["S"] = status
-        response = self.client.put_item(
-            TableName=doi_table,
-            Item=item["Item"],
-        )
-        return response
-
-
-def doi_to_be_added(doi, doi_items):
-    "Validate that a DOI is not a part of the database table and needs to  be added."
-    validation_status = False
-    if not any(doi_item["doi"] == doi for doi_item in doi_items):
-        validation_status = True
-    return validation_status
-
-
-def doi_to_be_retried(doi, doi_items):
-    "Validate that a DOI should be retried based on its status in the database table."
-    validation_status = False
-    for doi_item in [
-        d for d in doi_items if d["doi"] == doi and d["status"] == "Failed, will retry"
-    ]:
-        validation_status = True
-        logger.debug(f"{doi} will be retried.")
-    return validation_status
+        try:
+            item["Item"]["status"]["S"] = status_enums[status_enum]
+            response = self.client.put_item(
+                TableName=doi_table,
+                Item=item["Item"],
+            )
+            return response
+        except KeyError:
+            logger.error(
+                f"Invalid status_enum: {status_enum}, {doi} not updated in the database."
+            )

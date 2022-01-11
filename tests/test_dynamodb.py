@@ -1,6 +1,6 @@
-from moto import mock_dynamodb2
+import logging
 
-from awd import dynamodb
+from moto import mock_dynamodb2
 
 
 @mock_dynamodb2
@@ -142,7 +142,56 @@ def test_dynamodb_update_doi_item_attempts_in_database(dynamodb_class):
 
 
 @mock_dynamodb2
-def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
+def test_dynamodb_update_doi_item_status_in_database_invalid_enum(
+    caplog, dynamodb_class
+):
+    with caplog.at_level(logging.DEBUG):
+        dynamodb_class.client.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
+        dynamodb_class.client.put_item(
+            TableName="test_dois",
+            Item={
+                "doi": {"S": "111.1/1111"},
+                "status": {"S": "Failed, will retry"},
+                "attempts": {"S": "1"},
+            },
+        )
+        existing_item = dynamodb_class.client.get_item(
+            TableName="test_dois",
+            Key={"doi": {"S": "111.1/1111"}},
+        )
+        assert existing_item["Item"] == {
+            "attempts": {"S": "1"},
+            "doi": {"S": "111.1/1111"},
+            "status": {"S": "Failed, will retry"},
+        }
+        dynamodb_class.update_doi_item_status_in_database(
+            "test_dois", "111.1/1111", "Processing"
+        )
+        assert (
+            "Invalid status_enum: Processing, 111.1/1111 not updated in the database."
+            in caplog.text
+        )
+        updated_item = dynamodb_class.client.get_item(
+            TableName="test_dois",
+            Key={"doi": {"S": "111.1/1111"}},
+        )
+        assert updated_item["Item"] == {
+            "attempts": {"S": "1"},
+            "doi": {"S": "111.1/1111"},
+            "status": {"S": "Failed, will retry"},
+        }
+
+
+@mock_dynamodb2
+def test_dynamodb_update_doi_item_status_in_database_valid_enum(dynamodb_class):
     dynamodb_class.client.create_table(
         TableName="test_dois",
         KeySchema=[
@@ -170,7 +219,7 @@ def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
         "status": {"S": "Failed, will retry"},
     }
     update_response = dynamodb_class.update_doi_item_status_in_database(
-        "test_dois", "111.1/1111", "Processing"
+        "test_dois", "111.1/1111", 1
     )
     assert update_response["ResponseMetadata"]["HTTPStatusCode"] == 200
     updated_item = dynamodb_class.client.get_item(
@@ -182,27 +231,3 @@ def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
         "doi": {"S": "111.1/1111"},
         "status": {"S": "Processing"},
     }
-
-
-def test_doi_to_be_added_true():
-    doi_items = [{"doi": "111.1/111"}]
-    validation_status = dynamodb.doi_to_be_added("222.2/2222", doi_items)
-    assert validation_status is True
-
-
-def test_doi_to_be_added_false():
-    doi_items = [{"doi": "111.1/1111"}]
-    validation_status = dynamodb.doi_to_be_added("111.1/1111", doi_items)
-    assert validation_status is False
-
-
-def test_doi_to_be_retried_true():
-    doi_items = [{"doi": "111.1/111", "status": "Failed, will retry"}]
-    validation_status = dynamodb.doi_to_be_retried("111.1/111", doi_items)
-    assert validation_status is True
-
-
-def test_doi_to_be_retried_false():
-    doi_items = [{"doi": "111.1/111", "status": "Success"}]
-    validation_status = dynamodb.doi_to_be_retried("111.1/111", doi_items)
-    assert validation_status is False
