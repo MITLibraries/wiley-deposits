@@ -16,6 +16,7 @@ AWS_REGION_NAME = "us-east-1"
 if ENV == "stage" or ENV == "prod":
     ssm = SSM()
     DOI_FILE_PATH = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/doi_file_path")
+    DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/dynamodb_table_name")
     METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_metadata_url")
     CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_content_url")
     BUCKET = ssm.get_parameter_value(f"{DSS_SSM_PATH}{ENV}/wiley_submit_s3_bucket")
@@ -35,8 +36,10 @@ if ENV == "stage" or ENV == "prod":
     LOG_RECIPIENT_EMAIL = ssm.get_parameter_value(
         f"{WILEY_SSM_PATH}{ENV}/log_recipient_email"
     )
+    RETRY_THRESHOLD = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/retry_threshold")
 elif ENV == "test":
     DOI_FILE_PATH = "tests/fixtures/doi_success.csv"
+    DOI_TABLE = "test_dois"
     METADATA_URL = "http://example.com/works/"
     CONTENT_URL = "http://example.com/doi/"
     BUCKET = "awd"
@@ -46,8 +49,10 @@ elif ENV == "test":
     COLLECTION_HANDLE = "123.4/5678"
     LOG_SOURCE_EMAIL = "noreply@example.com"
     LOG_RECIPIENT_EMAIL = ["mock@mock.mock"]
+    RETRY_THRESHOLD = "10"
 else:
     DOI_FILE_PATH = os.getenv("DOI_FILE_PATH")
+    DOI_TABLE = os.getenv("DOI_TABLE")
     METADATA_URL = os.getenv("METADATA_URL")
     CONTENT_URL = os.getenv("CONTENT_URL")
     BUCKET = os.getenv("BUCKET")
@@ -57,3 +62,4 @@ else:
     COLLECTION_HANDLE = os.getenv("COLLECTION_HANDLE")
     LOG_SOURCE_EMAIL = os.getenv("LOG_SOURCE_EMAIL")
     LOG_RECIPIENT_EMAIL = os.getenv("LOG_RECIPIENT_EMAIL")
+    RETRY_THRESHOLD = os.getenv("RETRY_THRESHOLD")

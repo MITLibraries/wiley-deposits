@@ -1,13 +1,14 @@
 import logging
 
 import boto3
-from moto import mock_ses, mock_sqs
+from moto import mock_dynamodb2, mock_ses, mock_sqs
 
-from awd.deposit import deposit
+from awd.deposit import deposit, doi_to_be_added, doi_to_be_retried
 
 logger = logging.getLogger(__name__)
 
 
+@mock_dynamodb2
 @mock_ses
 @mock_sqs
 def test_deposit_success(
@@ -18,11 +19,23 @@ def test_deposit_success(
         sqs.create_queue(QueueName="mock-input-queue")
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_success.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -61,16 +74,29 @@ def test_deposit_success(
         assert "Logs sent to" in caplog.text
 
 
+@mock_dynamodb2
 @mock_ses
 def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_insufficient_metadata.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -101,16 +127,29 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
         assert "Logs sent to" in caplog.text
 
 
+@mock_dynamodb2
 @mock_ses
 def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_pdf_unavailable.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -138,16 +177,29 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
         assert "Logs sent to" in caplog.text
 
 
+@mock_dynamodb2
 @mock_ses
 def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
         result = runner.invoke(
             deposit,
             [
                 "--doi_file_path",
                 "tests/fixtures/doi_success.csv",
+                "--doi_table",
+                "test_dois",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -173,3 +225,27 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
         assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
+
+
+def test_doi_to_be_added_true():
+    doi_items = [{"doi": "111.1/111"}]
+    validation_status = doi_to_be_added("222.2/2222", doi_items)
+    assert validation_status is True
+
+
+def test_doi_to_be_added_false():
+    doi_items = [{"doi": "111.1/1111"}]
+    validation_status = doi_to_be_added("111.1/1111", doi_items)
+    assert validation_status is False
+
+
+def test_doi_to_be_retried_true():
+    doi_items = [{"doi": "111.1/111", "status": "Failed, will retry"}]
+    validation_status = doi_to_be_retried("111.1/111", doi_items)
+    assert validation_status is True
+
+
+def test_doi_to_be_retried_false():
+    doi_items = [{"doi": "111.1/111", "status": "Success"}]
+    validation_status = doi_to_be_retried("111.1/111", doi_items)
+    assert validation_status is False

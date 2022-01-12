@@ -7,6 +7,7 @@ import requests_mock
 from click.testing import CliRunner
 from moto import mock_s3, mock_ssm
 
+from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.sqs import SQS
 
@@ -25,6 +26,11 @@ def s3_mock(aws_credentials):
         s3 = boto3.client("s3", region_name="us-east-1")
         s3.create_bucket(Bucket="awd")
         yield s3
+
+
+@pytest.fixture(scope="function")
+def dynamodb_class():
+    return DynamoDB()
 
 
 @pytest.fixture(scope="function")
@@ -103,9 +109,18 @@ def mocked_ssm(aws_credentials):
 
 
 @pytest.fixture()
-def result_message_attributes():
+def result_failure_message_attributes():
     result_message_attributes = {
-        "PackageID": {"DataType": "String", "StringValue": "09876"},
+        "PackageID": {"DataType": "String", "StringValue": "222.2/2222"},
+        "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
+    }
+    return result_message_attributes
+
+
+@pytest.fixture()
+def result_success_message_attributes():
+    result_message_attributes = {
+        "PackageID": {"DataType": "String", "StringValue": "111.1/1111"},
         "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
     }
     return result_message_attributes

@@ -8,14 +8,14 @@ from awd import sqs
 
 @mock_sqs
 def test_sqs_delete_success(
-    sqs_class, result_message_attributes, result_success_message_body
+    sqs_class, result_success_message_attributes, result_success_message_body
 ):
     sqs = boto3.resource("sqs", region_name="us-east-1")
     sqs.create_queue(QueueName="mock-output-queue")
     sqs_class.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-output-queue",
-        result_message_attributes,
+        result_success_message_attributes,
         result_success_message_body,
     )
     messages = sqs_class.receive(
@@ -38,14 +38,14 @@ def test_sqs_delete_failure(sqs_class):
 
 @mock_sqs
 def test_sqs_receive_success(
-    sqs_class, result_message_attributes, result_success_message_body
+    sqs_class, result_success_message_attributes, result_success_message_body
 ):
     sqs = boto3.resource("sqs", region_name="us-east-1")
     sqs.create_queue(QueueName="mock-output-queue")
     sqs_class.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-output-queue",
-        result_message_attributes,
+        result_success_message_attributes,
         result_success_message_body,
     )
     messages = sqs_class.receive(
@@ -53,7 +53,7 @@ def test_sqs_receive_success(
     )
     for message in messages:
         assert message["Body"] == str(result_success_message_body)
-        assert message["MessageAttributes"] == result_message_attributes
+        assert message["MessageAttributes"] == result_success_message_attributes
 
 
 @mock_sqs

@@ -6,6 +6,8 @@ import click
 from botocore.exceptions import ClientError
 
 from awd import config
+from awd.deposit import Status
+from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
 
@@ -27,6 +29,12 @@ logging.getLogger("botocore").setLevel(logging.ERROR)
     help="The base URL of the SQS queues.",
 )
 @click.option(
+    "--doi_table",
+    required=True,
+    default=config.DOI_TABLE,
+    help="The DynamoDB table containing the state of DOIs in the workflow.",
+)
+@click.option(
     "--sqs_output_queue",
     required=True,
     default=config.SQS_OUTPUT_QUEUE,
@@ -45,9 +53,23 @@ logging.getLogger("botocore").setLevel(logging.ERROR)
     default=config.LOG_RECIPIENT_EMAIL,
     help="The email address receiving the logs. Repeatable",
 )
-def listen(sqs_base_url, sqs_output_queue, log_source_email, log_recipient_email):
+@click.option(
+    "--retry_threshold",
+    required=True,
+    default=config.RETRY_THRESHOLD,
+    help="The number of retries to attempt.",
+)
+def listen(
+    sqs_base_url,
+    doi_table,
+    sqs_output_queue,
+    log_source_email,
+    log_recipient_email,
+    retry_threshold,
+):
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     sqs = SQS()
+    dynamodb_client = DynamoDB()
     try:
         for message in sqs.receive(sqs_base_url, sqs_output_queue):
             doi = (
@@ -58,9 +80,22 @@ def listen(sqs_base_url, sqs_output_queue, log_source_email, log_recipient_email
             if "'ResultType': 'error'" in message["Body"]:
                 logger.error(f'DOI: {doi}, Result: {message.get("Body")}')
                 sqs.delete(sqs_base_url, sqs_output_queue, message["ReceiptHandle"])
+                if dynamodb_client.retry_attempts_exceeded(
+                    doi_table, doi, retry_threshold
+                ):
+                    dynamodb_client.update_doi_item_status_in_database(
+                        doi_table, doi, Status.PERMANENTLY_FAILED.value
+                    )
+                else:
+                    dynamodb_client.update_doi_item_status_in_database(
+                        doi_table, doi, Status.FAILED.value
+                    )
             else:
                 logger.info(f'DOI: {doi}, Result: {message.get("Body")}')
                 sqs.delete(sqs_base_url, sqs_output_queue, message["ReceiptHandle"])
+                dynamodb_client.update_doi_item_status_in_database(
+                    doi_table, doi, Status.SUCCESS.value
+                )
         logger.debug("Messages received and deleted from output queue")
     except ClientError as e:
         logger.error(
