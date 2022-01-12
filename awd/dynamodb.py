@@ -1,17 +1,9 @@
 import logging
-from enum import Enum
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 
 logger = logging.getLogger(__name__)
-
-
-class Status(Enum):
-    PROCESSING = 1
-    SUCCESS = 2
-    FAILED = 3
-    PERMANENTLY_FAILED = 4
 
 
 class DynamoDB:
@@ -74,21 +66,16 @@ class DynamoDB:
         self,
         doi_table,
         doi,
-        status_enum,
+        status_code,
     ):
         """Update status for DOI item in database."""
         item = self.client.get_item(
             TableName=doi_table,
             Key={"doi": {"S": doi}},
         )
-        if status_enum in Status._member_names_:
-            item["Item"]["status"]["S"] = status_enum
-            response = self.client.put_item(
-                TableName=doi_table,
-                Item=item["Item"],
-            )
-            return response
-        else:
-            logger.error(
-                f"Invalid status_enum: {status_enum}, {doi} not updated in the database."
-            )
+        item["Item"]["status"]["S"] = str(status_code)
+        response = self.client.put_item(
+            TableName=doi_table,
+            Item=item["Item"],
+        )
+        return response

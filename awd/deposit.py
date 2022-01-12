@@ -2,6 +2,7 @@ import io
 import json
 import logging
 from datetime import datetime
+from enum import Enum
 
 import click
 from botocore.exceptions import ClientError
@@ -15,6 +16,13 @@ logging.basicConfig(
     level=logging.ERROR,
     handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
 )
+
+
+class Status(Enum):
+    PROCESSING = 1
+    SUCCESS = 2
+    FAILED = 3
+    PERMANENTLY_FAILED = 4
 
 
 @click.command()
@@ -110,13 +118,13 @@ def deposit(
         elif doi_to_be_retried(doi, doi_items) is False:
             continue
         dynamodb_client.update_doi_item_status_in_database(
-            doi_table, doi, dynamodb.Status.PROCESSING
+            doi_table, doi, Status.PROCESSING.value
         )
         dynamodb_client.update_doi_item_attempts_in_database(doi_table, doi)
         crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
         if crossref.is_valid_response(doi, crossref_work_record) is False:
             dynamodb_client.update_doi_item_status_in_database(
-                doi_table, doi, dynamodb.Status.FAILED
+                doi_table, doi, Status.FAILED.value
             )
             continue
         value_dict = crossref.get_metadata_extract_from(crossref_work_record)
@@ -125,13 +133,13 @@ def deposit(
         )
         if crossref.is_valid_dspace_metadata(metadata) is False:
             dynamodb_client.update_doi_item_status_in_database(
-                doi_table, doi, dynamodb.Status.FAILED
+                doi_table, doi, Status.FAILED.value
             )
             continue
         wiley_response = wiley.get_wiley_response(content_url, doi)
         if wiley.is_valid_response(doi, wiley_response) is False:
             dynamodb_client.update_doi_item_status_in_database(
-                doi_table, doi, dynamodb.Status.FAILED
+                doi_table, doi, Status.FAILED.value
             )
             continue
         doi_file_name = doi.replace("/", "-")  # 10.1002/term.3131 to 10.1002-term.3131
@@ -146,7 +154,7 @@ def deposit(
                 f"Upload failed: {file['file_name']}, {e.response['Error']['Message']}"
             )
             dynamodb_client.update_doi_item_status_in_database(
-                doi_table, doi, dynamodb.Status.FAILED
+                doi_table, doi, Status.FAILED.value
             )
             continue
         bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
