@@ -159,7 +159,7 @@ def test_dynamodb_update_doi_item_status_in_database_invalid_enum(
             TableName="test_dois",
             Item={
                 "doi": {"S": "111.1/1111"},
-                "status": {"S": "Failed, will retry"},
+                "status": {"S": "FAILED"},
                 "attempts": {"S": "1"},
             },
         )
@@ -170,7 +170,7 @@ def test_dynamodb_update_doi_item_status_in_database_invalid_enum(
         assert existing_item["Item"] == {
             "attempts": {"S": "1"},
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": "FAILED"},
         }
         dynamodb_class.update_doi_item_status_in_database(
             "test_dois", "111.1/1111", "Processing"
@@ -186,7 +186,7 @@ def test_dynamodb_update_doi_item_status_in_database_invalid_enum(
         assert updated_item["Item"] == {
             "attempts": {"S": "1"},
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": "FAILED"},
         }
 
 
@@ -219,7 +219,7 @@ def test_dynamodb_update_doi_item_status_in_database_valid_enum(dynamodb_class):
         "status": {"S": "Failed, will retry"},
     }
     update_response = dynamodb_class.update_doi_item_status_in_database(
-        "test_dois", "111.1/1111", 1
+        "test_dois", "111.1/1111", "PROCESSING"
     )
     assert update_response["ResponseMetadata"]["HTTPStatusCode"] == 200
     updated_item = dynamodb_class.client.get_item(
@@ -229,5 +229,5 @@ def test_dynamodb_update_doi_item_status_in_database_valid_enum(dynamodb_class):
     assert updated_item["Item"] == {
         "attempts": {"S": "1"},
         "doi": {"S": "111.1/1111"},
-        "status": {"S": "Processing"},
+        "status": {"S": "PROCESSING"},
     }

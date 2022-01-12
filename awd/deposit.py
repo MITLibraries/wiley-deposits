@@ -109,22 +109,30 @@ def deposit(
             dynamodb_client.add_doi_item_to_database(doi_table, doi)
         elif doi_to_be_retried(doi, doi_items) is False:
             continue
-        dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 1)
+        dynamodb_client.update_doi_item_status_in_database(
+            doi_table, doi, dynamodb.Status.PROCESSING
+        )
         dynamodb_client.update_doi_item_attempts_in_database(doi_table, doi)
         crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
         if crossref.is_valid_response(doi, crossref_work_record) is False:
-            dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 3)
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, dynamodb.Status.FAILED
+            )
             continue
         value_dict = crossref.get_metadata_extract_from(crossref_work_record)
         metadata = crossref.create_dspace_metadata_from_dict(
             value_dict, "config/metadata_mapping.json"
         )
         if crossref.is_valid_dspace_metadata(metadata) is False:
-            dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 3)
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, dynamodb.Status.FAILED
+            )
             continue
         wiley_response = wiley.get_wiley_response(content_url, doi)
         if wiley.is_valid_response(doi, wiley_response) is False:
-            dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 3)
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, dynamodb.Status.FAILED
+            )
             continue
         doi_file_name = doi.replace("/", "-")  # 10.1002/term.3131 to 10.1002-term.3131
         files_dict = s3.create_files_dict(
@@ -137,7 +145,9 @@ def deposit(
             logger.error(
                 f"Upload failed: {file['file_name']}, {e.response['Error']['Message']}"
             )
-            dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 3)
+            dynamodb_client.update_doi_item_status_in_database(
+                doi_table, doi, dynamodb.Status.FAILED
+            )
             continue
         bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
         metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"

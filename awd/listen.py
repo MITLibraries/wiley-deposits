@@ -5,7 +5,7 @@ from datetime import datetime
 import click
 from botocore.exceptions import ClientError
 
-from awd import config
+from awd import config, dynamodb
 from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
@@ -83,16 +83,18 @@ def listen(
                     doi_table, doi, retry_threshold
                 ):
                     dynamodb_client.update_doi_item_status_in_database(
-                        doi_table, doi, 4
+                        doi_table, doi, dynamodb.Status.PERMANENTLY_FAILED
                     )
                 else:
                     dynamodb_client.update_doi_item_status_in_database(
-                        doi_table, doi, 3
+                        doi_table, doi, dynamodb.Status.FAILED
                     )
             else:
                 logger.info(f'DOI: {doi}, Result: {message.get("Body")}')
                 sqs.delete(sqs_base_url, sqs_output_queue, message["ReceiptHandle"])
-                dynamodb_client.update_doi_item_status_in_database(doi_table, doi, 2)
+                dynamodb_client.update_doi_item_status_in_database(
+                    doi_table, doi, dynamodb.Status.SUCCESS
+                )
         logger.debug("Messages received and deleted from output queue")
     except ClientError as e:
         logger.error(
