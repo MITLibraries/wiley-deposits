@@ -1,6 +1,6 @@
 from moto import mock_dynamodb2
 
-from awd.deposit import Status
+from awd.cli import Status
 
 
 @mock_dynamodb2
