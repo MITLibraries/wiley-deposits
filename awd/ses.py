@@ -26,11 +26,11 @@ class SES:
         message.attach(attachment_object)
         return message
 
-    def send_email(self, source_email, recipients, message):
-        """Send email via SES. Recipients parameter must be a list and not a str."""
+    def send_email(self, source_email, recipient, message):
+        """Send email via SES."""
         response = self.client.send_raw_email(
             Source=source_email,
-            Destinations=recipients,
+            Destinations=[recipient],
             RawMessage={
                 "Data": message.as_string(),
             },

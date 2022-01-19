@@ -34,7 +34,7 @@ def test_dynamodb_retrieve_doi_items_from_database(dynamodb_class):
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
         },
     )
@@ -42,7 +42,7 @@ def test_dynamodb_retrieve_doi_items_from_database(dynamodb_class):
     assert dois == [
         {
             "doi": "111.1/1111",
-            "status": "Failed, will retry",
+            "status": str(Status.FAILED.value),
             "attempts": "1",
         }
     ]
@@ -63,7 +63,7 @@ def test_dynamodb_retry_threshold_exceeded_false(dynamodb_class):
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
         },
     )
@@ -88,7 +88,7 @@ def test_dynamodb_retry_threshold_exceeded_true(dynamodb_class):
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "10"},
         },
     )
@@ -113,7 +113,7 @@ def test_dynamodb_update_doi_item_attempts_in_database(dynamodb_class):
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
         },
     )
@@ -124,7 +124,7 @@ def test_dynamodb_update_doi_item_attempts_in_database(dynamodb_class):
     assert existing_item["Item"] == {
         "attempts": {"S": "1"},
         "doi": {"S": "111.1/1111"},
-        "status": {"S": "Failed, will retry"},
+        "status": {"S": str(Status.FAILED.value)},
     }
     update_response = dynamodb_class.update_doi_item_attempts_in_database(
         "test_dois", "111.1/1111"
@@ -137,7 +137,7 @@ def test_dynamodb_update_doi_item_attempts_in_database(dynamodb_class):
     assert updated_item["Item"] == {
         "attempts": {"S": "2"},
         "doi": {"S": "111.1/1111"},
-        "status": {"S": "Failed, will retry"},
+        "status": {"S": str(Status.FAILED.value)},
     }
 
 
@@ -156,7 +156,7 @@ def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
-            "status": {"S": "Failed, will retry"},
+            "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
         },
     )
@@ -167,7 +167,7 @@ def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
     assert existing_item["Item"] == {
         "attempts": {"S": "1"},
         "doi": {"S": "111.1/1111"},
-        "status": {"S": "Failed, will retry"},
+        "status": {"S": str(Status.FAILED.value)},
     }
     update_response = dynamodb_class.update_doi_item_status_in_database(
         "test_dois", "111.1/1111", Status.PROCESSING.value
@@ -180,5 +180,5 @@ def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
     assert updated_item["Item"] == {
         "attempts": {"S": "1"},
         "doi": {"S": "111.1/1111"},
-        "status": {"S": "1"},
+        "status": {"S": str(Status.PROCESSING.value)},
     }

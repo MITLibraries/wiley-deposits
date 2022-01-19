@@ -12,13 +12,7 @@ from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
 
-stream = io.StringIO()
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.ERROR,
-    handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
-)
 
 
 class Status(Enum):
@@ -41,7 +35,9 @@ def doi_to_be_retried(doi, doi_items):
     "Validate that a DOI should be retried based on its status in the database table."
     validation_status = False
     for doi_item in [
-        d for d in doi_items if d["doi"] == doi and d["status"] == "Failed, will retry"
+        d
+        for d in doi_items
+        if d["doi"] == doi and d["status"] == str(Status.FAILED.value)
     ]:
         validation_status = True
         logger.debug(f"{doi} will be retried.")
@@ -76,7 +72,6 @@ def doi_to_be_retried(doi, doi_items):
 @click.option(
     "--log_recipient_email",
     required=True,
-    multiple=True,
     default=config.LOG_RECIPIENT_EMAIL,
     help="The email address receiving the logs. Repeatable",
 )
@@ -89,12 +84,19 @@ def cli(
     log_source_email,
     log_recipient_email,
 ):
+    stream = io.StringIO()
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        level=logging.INFO,
+        handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
+    )
     ctx.ensure_object(dict)
     ctx.obj["doi_table"] = doi_table
     ctx.obj["sqs_base_url"] = sqs_base_url
     ctx.obj["sqs_output_queue"] = sqs_output_queue
     ctx.obj["log_source_email"] = log_source_email
     ctx.obj["log_recipient_email"] = log_recipient_email
+    ctx.obj["stream"] = stream
 
 
 @cli.command()
@@ -145,6 +147,7 @@ def deposit(
     collection_handle,
 ):
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
+    stream = ctx.obj["stream"]
     s3_client = s3.S3()
     sqs_client = sqs.SQS()
     dynamodb_client = dynamodb.DynamoDB()
@@ -198,7 +201,7 @@ def deposit(
         bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
         metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
         dss_message_attributes = sqs.create_dss_message_attributes(
-            doi_file_name, "wiley", ctx.obj["sqs_output_queue"]
+            doi, "wiley", ctx.obj["sqs_output_queue"]
         )
         dss_message_body = sqs.create_dss_message_body(
             "DSpace@MIT",
@@ -213,7 +216,7 @@ def deposit(
             dss_message_attributes,
             dss_message_body,
         )
-    logger.info("Submission process has completed")
+    logger.debug("Submission process has completed")
 
     ses_client = ses.SES()
     message = ses_client.create_email(
@@ -224,10 +227,10 @@ def deposit(
     try:
         ses_client.send_email(
             ctx.obj["log_source_email"],
-            list(ctx.obj["log_recipient_email"]),
+            ctx.obj["log_recipient_email"],
             message,
         )
-        logger.info(f"Logs sent to {list(ctx.obj['log_recipient_email'])}")
+        logger.debug(f"Logs sent to {ctx.obj['log_recipient_email']}")
     except ClientError as e:
         logger.error(f"Failed to send logs: {e.response['Error']['Message']}")
 
@@ -244,8 +247,8 @@ def listen(
     ctx,
     retry_threshold,
 ):
-
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
+    stream = ctx.obj["stream"]
     sqs = SQS()
     dynamodb_client = DynamoDB()
     try:
@@ -281,6 +284,7 @@ def listen(
                     ctx.obj["sqs_output_queue"],
                     message["ReceiptHandle"],
                 )
+
                 dynamodb_client.update_doi_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.SUCCESS.value
                 )
@@ -298,9 +302,9 @@ def listen(
     try:
         ses_client.send_email(
             ctx.obj["log_source_email"],
-            list(ctx.obj["log_recipient_email"]),
+            ctx.obj["log_recipient_email"],
             message,
         )
-        logger.info(f"Logs sent to {list(ctx.obj['log_recipient_email'])}")
+        logger.debug(f"Logs sent to {ctx.obj['log_recipient_email']}")
     except ClientError as e:
         logger.error(f"Failed to send logs: {e.response['Error']['Message']}")

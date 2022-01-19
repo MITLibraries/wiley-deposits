@@ -3,7 +3,7 @@ import logging
 import boto3
 from moto import mock_dynamodb2, mock_ses, mock_sqs
 
-from awd.cli import cli, doi_to_be_added, doi_to_be_retried
+from awd.cli import Status, cli, doi_to_be_added, doi_to_be_retried
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +21,13 @@ def test_doi_to_be_added_false():
 
 
 def test_doi_to_be_retried_true():
-    doi_items = [{"doi": "111.1/111", "status": "Failed, will retry"}]
+    doi_items = [{"doi": "111.1/111", "status": str(Status.FAILED.value)}]
     validation_status = doi_to_be_retried("111.1/111", doi_items)
     assert validation_status is True
 
 
 def test_doi_to_be_retried_false():
-    doi_items = [{"doi": "111.1/111", "status": "Success"}]
+    doi_items = [{"doi": "111.1/111", "status": str(Status.SUCCESS.value)}]
     validation_status = doi_to_be_retried("111.1/111", doi_items)
     assert validation_status is False
 
@@ -298,7 +298,7 @@ def test_listen_success(
             TableName="test_dois",
             Item={
                 "doi": {"S": "111.1/1111"},
-                "status": {"S": "Processing"},
+                "status": {"S": str(Status.PROCESSING.value)},
                 "attempts": {"S": "1"},
             },
         )
@@ -306,7 +306,7 @@ def test_listen_success(
             TableName="test_dois",
             Item={
                 "doi": {"S": "222.2/2222"},
-                "status": {"S": "Processing"},
+                "status": {"S": str(Status.PROCESSING.value)},
                 "attempts": {"S": "1"},
             },
         )
