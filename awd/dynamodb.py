@@ -3,6 +3,8 @@ import logging
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 
+from awd.status import Status
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +23,7 @@ class DynamoDB:
             TableName=doi_table,
             Item={
                 "doi": {"S": doi},
-                "status": {"S": "2"},
+                "status": {"S": str(Status.PROCESSING)},
                 "attempts": {"S": "0"},
             },
         )
