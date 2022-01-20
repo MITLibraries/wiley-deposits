@@ -23,7 +23,7 @@ def test_ses_send_email():
     message = message = MIMEMultipart()
     response = ses.SES().send_email(
         "noreply@example.com",
-        ["test@example.com"],
+        "test@example.com",
         message,
     )
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200

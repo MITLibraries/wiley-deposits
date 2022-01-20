@@ -7,9 +7,8 @@ ENV = os.getenv("WORKSPACE")
 DSS_SSM_PATH = os.getenv("DSS_SSM_PATH")
 WILEY_SSM_PATH = os.getenv("WILEY_SSM_PATH")
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info("Configuring awd for current env: %s", ENV)
+logger.debug("Configuring awd for current env: %s", ENV)
 
 AWS_REGION_NAME = "us-east-1"
 
@@ -19,14 +18,13 @@ if ENV == "stage" or ENV == "prod":
     DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/dynamodb_table_name")
     METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_metadata_url")
     CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_content_url")
-    BUCKET = ssm.get_parameter_value(f"{DSS_SSM_PATH}{ENV}/wiley_submit_s3_bucket")
-    SQS_BASE_URL = ssm.get_parameter_value(f"{DSS_SSM_PATH}{ENV}/SQS_base_url")
-    SQS_INPUT_QUEUE = ssm.get_parameter_value(
-        f"{DSS_SSM_PATH}{ENV}/SQS_dss_input_queue"
-    )
+    BUCKET = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_submit_s3_bucket")
+    SQS_BASE_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/SQS_base_url")
+    SQS_INPUT_QUEUE = ssm.get_parameter_value(f"{DSS_SSM_PATH}{ENV}/dss_input_queue")
     SQS_OUTPUT_QUEUE = ssm.get_parameter_value(
-        f"{DSS_SSM_PATH}{ENV}/SQS_dss_wiley_output_queue"
-    )
+        f"{DSS_SSM_PATH}{ENV}/dss_output_queues"
+    ).split(",")[1]
+
     COLLECTION_HANDLE = ssm.get_parameter_value(
         f"{WILEY_SSM_PATH}{ENV}/wiley_collection_handle"
     )
