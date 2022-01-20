@@ -11,6 +11,19 @@ class SSM:
     def __init__(self):
         self.client = client("ssm", region_name="us-east-1")
 
+    def check_permissions(self, ssm_path):
+        """Check whether we can retrieve an encrypted ssm parameter.
+        Raises an exception if we can't retrieve the parameter at all OR if the
+        parameter is retrieved but the value can't be decrypted.
+        """
+        decrypted_parameter = self.get_parameter_value(ssm_path + "secure")
+        if decrypted_parameter != "true":
+            raise Exception(
+                "Was not able to successfully retrieve encrypted SSM parameter "
+                f"{decrypted_parameter}"
+            )
+        return f"SSM permissions confirmed for path '{ssm_path}'"
+
     def get_parameter_value(self, parameter_key):
         """Get parameter value based on the specified key."""
         parameter_object = self.client.get_parameter(

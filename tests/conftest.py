@@ -5,19 +5,56 @@ import boto3
 import pytest
 import requests_mock
 from click.testing import CliRunner
-from moto import mock_s3, mock_ssm
+from moto import mock_iam, mock_s3, mock_ssm
 
 from awd.dynamodb import DynamoDB
 from awd.s3 import S3
+from awd.ses import SES
 from awd.sqs import SQS
 
 
 @pytest.fixture(scope="function")
 def aws_credentials():
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-    os.environ["AWS_SECURITY_TOKEN"] = "testing"
-    os.environ["AWS_SESSION_TOKEN"] = "testing"
+
+
+@pytest.fixture()
+def test_aws_user(aws_credentials):
+    with mock_iam():
+        user_name = "test-user"
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:ListBucket", "sqs:GetQueueUrl"],
+                    "Resource": "*",
+                },
+                {
+                    "Effect": "Deny",
+                    "Action": [
+                        "dynamodb:PutItem",
+                        "dynamodb:Scan",
+                        "s3:GetObject",
+                        "ses:SendRawEmail",
+                        "sqs:ReceiveMessage",
+                        "sqs:SendMessage",
+                        "ssm:GetParameter",
+                    ],
+                    "Resource": "*",
+                },
+            ],
+        }
+        client = boto3.client("iam", region_name="us-east-1")
+        client.create_user(UserName=user_name)
+        client.put_user_policy(
+            UserName=user_name,
+            PolicyName="policy1",
+            PolicyDocument=json.dumps(policy_document),
+        )
+        yield client.create_access_key(UserName="test-user")["AccessKey"]
 
 
 @pytest.fixture(scope="function")
@@ -31,6 +68,11 @@ def s3_mock(aws_credentials):
 @pytest.fixture(scope="function")
 def dynamodb_class():
     return DynamoDB()
+
+
+@pytest.fixture(scope="function")
+def ses_class():
+    return SES()
 
 
 @pytest.fixture(scope="function")
@@ -103,6 +145,11 @@ def mocked_ssm(aws_credentials):
         ssm.put_parameter(
             Name="/test/example/collection_handle",
             Value="111.1/111",
+            Type="SecureString",
+        )
+        ssm.put_parameter(
+            Name="/test/example/secure",
+            Value="true",
             Type="SecureString",
         )
         yield ssm

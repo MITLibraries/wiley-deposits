@@ -1,7 +1,10 @@
+import logging
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 from boto3 import client
+
+logger = logging.getLogger(__name__)
 
 
 class SES:
@@ -9,6 +12,14 @@ class SES:
 
     def __init__(self):
         self.client = client("ses", region_name="us-east-1")
+
+    def check_permissions(self, source_email_address, recipient_email_address):
+        """Verify that an email can be sent from the specified email address"""
+        self.send_email(source_email_address, recipient_email_address, MIMEMultipart())
+        logger.debug(f"Email sent from: {source_email_address}")
+        return (
+            f"SES send from permissions confirmed for address: {source_email_address}"
+        )
 
     def create_email(
         self,
@@ -26,11 +37,11 @@ class SES:
         message.attach(attachment_object)
         return message
 
-    def send_email(self, source_email, recipient, message):
+    def send_email(self, source_email, recipient_email_address, message):
         """Send email via SES."""
         response = self.client.send_raw_email(
             Source=source_email,
-            Destinations=[recipient],
+            Destinations=[recipient_email_address],
             RawMessage={
                 "Data": message.as_string(),
             },
