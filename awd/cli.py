@@ -2,7 +2,6 @@ import io
 import json
 import logging
 from datetime import datetime
-from enum import Enum
 
 import click
 from botocore.exceptions import ClientError
@@ -11,15 +10,9 @@ from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
 from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
+from awd.status import Status
 
 logger = logging.getLogger(__name__)
-
-
-class Status(Enum):
-    PROCESSING = 1
-    SUCCESS = 2
-    FAILED = 3
-    PERMANENTLY_FAILED = 4
 
 
 def doi_to_be_added(doi, doi_items):
@@ -91,12 +84,12 @@ def cli(
         handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
     )
     ctx.ensure_object(dict)
+    ctx.obj["stream"] = stream
     ctx.obj["doi_table"] = doi_table
     ctx.obj["sqs_base_url"] = sqs_base_url
     ctx.obj["sqs_output_queue"] = sqs_output_queue
     ctx.obj["log_source_email"] = log_source_email
     ctx.obj["log_recipient_email"] = log_recipient_email
-    ctx.obj["stream"] = stream
 
 
 @cli.command()

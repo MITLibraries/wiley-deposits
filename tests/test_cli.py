@@ -3,7 +3,8 @@ import logging
 import boto3
 from moto import mock_dynamodb2, mock_ses, mock_sqs
 
-from awd.cli import Status, cli, doi_to_be_added, doi_to_be_retried
+from awd.cli import cli, doi_to_be_added, doi_to_be_retried
+from awd.status import Status
 
 logger = logging.getLogger(__name__)
 
