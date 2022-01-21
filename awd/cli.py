@@ -319,7 +319,6 @@ def check_permissions():
         happen and the test message will remain in the queue. It is best to only run
         this command when the configured output queues are empty.
     """
-
     dynamodb = DynamoDB()
     logger.info(dynamodb.check_read_permissions(config.DOI_TABLE))
     logger.info(dynamodb.check_write_permissions(config.DOI_TABLE))
@@ -335,7 +334,11 @@ def check_permissions():
         logger.info(ssm.check_permissions(path))
 
     sqs = SQS()
-    logger.info(sqs.check_write_permissions(config.SQS_BASE_URL, config.SQS_INPUT_QUEUE))
-    logger.info(sqs.check_read_permissions(config.SQS_BASE_URL, config.SQS_OUTPUT_QUEUE))
+    logger.info(
+        sqs.check_write_permissions(config.SQS_BASE_URL, config.SQS_INPUT_QUEUE)
+    )
+    logger.info(
+        sqs.check_read_permissions(config.SQS_BASE_URL, config.SQS_OUTPUT_QUEUE)
+    )
 
     logger.info(f"All permissions confirmed for env: {config.ENV}")
