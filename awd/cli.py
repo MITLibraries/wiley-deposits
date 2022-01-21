@@ -335,7 +335,7 @@ def check_permissions():
         logger.info(ssm.check_permissions(path))
 
     sqs = SQS()
-    logger.info(sqs.check_write_permissions(config.SQS_INPUT_QUEUE))
-    logger.info(sqs.check_read_permissions(config.SQS_OUTPUT_QUEUE))
+    logger.info(sqs.check_write_permissions(config.SQS_BASE_URL, config.SQS_INPUT_QUEUE))
+    logger.info(sqs.check_read_permissions(config.SQS_BASE_URL, config.SQS_OUTPUT_QUEUE))
 
     logger.info(f"All permissions confirmed for env: {config.ENV}")

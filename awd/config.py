@@ -4,8 +4,8 @@ import os
 from awd.ssm import SSM
 
 ENV = os.getenv("WORKSPACE")
-DSS_SSM_PATH = f'{os.getenv("DSS_SSM_PATH")}{ENV}/'
-WILEY_SSM_PATH = f'{os.getenv("WILEY_SSM_PATH")}{ENV}/'
+DSS_SSM_PATH = f'{os.getenv("DSS_SSM_PATH")}'
+WILEY_SSM_PATH = f'{os.getenv("WILEY_SSM_PATH")}'
 
 logger = logging.getLogger(__name__)
 logger.debug("Configuring awd for current env: %s", ENV)
