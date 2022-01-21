@@ -4,8 +4,8 @@ import os
 from awd.ssm import SSM
 
 ENV = os.getenv("WORKSPACE")
-DSS_SSM_PATH = os.getenv("DSS_SSM_PATH")
-WILEY_SSM_PATH = os.getenv("WILEY_SSM_PATH")
+DSS_SSM_PATH = f'{os.getenv("DSS_SSM_PATH")}'
+WILEY_SSM_PATH = f'{os.getenv("WILEY_SSM_PATH")}'
 
 logger = logging.getLogger(__name__)
 logger.debug("Configuring awd for current env: %s", ENV)
@@ -14,27 +14,26 @@ AWS_REGION_NAME = "us-east-1"
 
 if ENV == "stage" or ENV == "prod":
     ssm = SSM()
-    DOI_FILE_PATH = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/doi_file_path")
-    DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/dynamodb_table_name")
-    METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_metadata_url")
-    CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_content_url")
-    BUCKET = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/wiley_submit_s3_bucket")
-    SQS_BASE_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/SQS_base_url")
-    SQS_INPUT_QUEUE = ssm.get_parameter_value(f"{DSS_SSM_PATH}{ENV}/dss_input_queue")
+    DOI_FILE_PATH = ssm.get_parameter_value(f"{WILEY_SSM_PATH}doi_file_path")
+
+    DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}dynamodb_table_name")
+    METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley_metadata_url")
+    CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley_content_url")
+    BUCKET = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley_submit_s3_bucket")
+    SQS_BASE_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}SQS_base_url")
+    SQS_INPUT_QUEUE = ssm.get_parameter_value(f"{DSS_SSM_PATH}dss_input_queue")
     SQS_OUTPUT_QUEUE = ssm.get_parameter_value(
-        f"{DSS_SSM_PATH}{ENV}/dss_output_queues"
+        f"{DSS_SSM_PATH}dss_output_queues"
     ).split(",")[1]
 
     COLLECTION_HANDLE = ssm.get_parameter_value(
-        f"{WILEY_SSM_PATH}{ENV}/wiley_collection_handle"
+        f"{WILEY_SSM_PATH}wiley_collection_handle"
     )
-    LOG_SOURCE_EMAIL = ssm.get_parameter_value(
-        f"{WILEY_SSM_PATH}{ENV}/log_source_email"
-    )
+    LOG_SOURCE_EMAIL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}log_source_email")
     LOG_RECIPIENT_EMAIL = ssm.get_parameter_value(
-        f"{WILEY_SSM_PATH}{ENV}/log_recipient_email"
+        f"{WILEY_SSM_PATH}log_recipient_email"
     )
-    RETRY_THRESHOLD = ssm.get_parameter_value(f"{WILEY_SSM_PATH}{ENV}/retry_threshold")
+    RETRY_THRESHOLD = ssm.get_parameter_value(f"{WILEY_SSM_PATH}retry_threshold")
 elif ENV == "test":
     DOI_FILE_PATH = "tests/fixtures/doi_success.csv"
     DOI_TABLE = "test_dois"
@@ -46,7 +45,7 @@ elif ENV == "test":
     SQS_OUTPUT_QUEUE = "mock-output-queue"
     COLLECTION_HANDLE = "123.4/5678"
     LOG_SOURCE_EMAIL = "noreply@example.com"
-    LOG_RECIPIENT_EMAIL = ["mock@mock.mock"]
+    LOG_RECIPIENT_EMAIL = "mock@mock.mock"
     RETRY_THRESHOLD = "10"
 else:
     DOI_FILE_PATH = os.getenv("DOI_FILE_PATH")

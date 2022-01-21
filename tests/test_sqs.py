@@ -1,9 +1,99 @@
+import os
+
 import boto3
 import pytest
 from botocore.exceptions import ClientError
 from moto import mock_sqs
+from moto.core import set_initial_no_auth_action_count
 
 from awd import sqs
+
+
+@mock_sqs
+def test_check_read_permissions_success(
+    sqs_class,
+    result_success_message_attributes,
+    result_success_message_body,
+):
+    sqs = boto3.resource("sqs", region_name="us-east-1")
+    sqs.create_queue(QueueName="mock-output-queue")
+    sqs_class.send(
+        "https://queue.amazonaws.com/123456789012/",
+        "mock-output-queue",
+        result_success_message_attributes,
+        result_success_message_body,
+    )
+    result = sqs_class.check_read_permissions(
+        "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
+    )
+    assert result == "SQS read permissions confirmed for queue: mock-output-queue"
+
+
+@mock_sqs
+@set_initial_no_auth_action_count(3)
+def test_check_read_permissions_raises_error_if_no_permission(
+    test_aws_user,
+    result_success_message_body,
+):
+    sqs_resource = boto3.resource("sqs", region_name="us-east-1")
+    sqs_resource.create_queue(QueueName="mock-output-queue1")
+    queue = sqs_resource.get_queue_by_name(QueueName="mock-output-queue1")
+    queue.send_message(MessageBody=str(result_success_message_body))
+    os.environ["AWS_ACCESS_KEY_ID"] = test_aws_user["AccessKeyId"]
+    os.environ["AWS_SECRET_ACCESS_KEY"] = test_aws_user["SecretAccessKey"]
+    boto3.setup_default_session()
+    sqs_class = sqs.SQS()
+    with pytest.raises(ClientError) as e:
+        sqs_class.check_read_permissions(
+            "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
+        )
+    assert (
+        "User: arn:aws:iam::123456789012:user/test-user is not authorized to perform: "
+        "sqs:ReceiveMessage"
+    ) in str(e.value)
+
+
+@mock_sqs
+def test_check_write_permissions_success(sqs_class):
+    sqs = boto3.resource("sqs", region_name="us-east-1")
+    sqs.create_queue(QueueName="mock-input-queue")
+    messages = sqs_class.receive(
+        "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
+    )
+    with pytest.raises(StopIteration):
+        next(messages)
+    result = sqs_class.check_write_permissions(
+        "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
+    )
+    assert result == "SQS write permissions confirmed for queue: mock-input-queue"
+    messages = sqs_class.receive(
+        "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
+    )
+    with pytest.raises(StopIteration):
+        next(messages)
+
+
+@mock_sqs
+@set_initial_no_auth_action_count(3)
+def test_check_write_permissions_raises_error_if_no_permission(
+    test_aws_user, result_success_message_body
+):
+    sqs_resource = boto3.resource("sqs", region_name="us-east-1")
+    sqs_resource.create_queue(QueueName="mock-output-queue")
+    queue = sqs_resource.get_queue_by_name(QueueName="mock-output-queue")
+    queue.send_message(MessageBody=str(result_success_message_body))
+    os.environ["AWS_ACCESS_KEY_ID"] = test_aws_user["AccessKeyId"]
+    os.environ["AWS_SECRET_ACCESS_KEY"] = test_aws_user["SecretAccessKey"]
+    boto3.setup_default_session()
+    sqs_class = sqs.SQS()
+    with pytest.raises(ClientError) as e:
+        sqs_class.check_write_permissions(
+            "https://queue.amazonaws.com/123456789012/", "empty_input_queue"
+        )
+    assert (
+        "User: arn:aws:iam::123456789012:user/test-user is not authorized to perform: "
+        "sqs:SendMessage"
+    ) in str(e.value)
 
 
 @mock_sqs

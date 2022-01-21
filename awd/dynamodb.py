@@ -29,6 +29,31 @@ class DynamoDB:
         )
         return response
 
+    def check_read_permissions(self, doi_table):
+        """Verify that the contents of the specified table can be read."""
+        self.client.scan(
+            TableName=doi_table,
+        )
+        logger.debug(f"Able to access table: {doi_table}")
+        return f"Read permissions confirmed for table: {doi_table}"
+
+    def check_write_permissions(self, doi_table):
+        """Verify that items can be written to the specified table."""
+        self.add_doi_item_to_database(doi_table, "SmokeTest")
+        if "Item" in self.client.get_item(
+            TableName=doi_table,
+            Key={"doi": {"S": "SmokeTest"}},
+        ):
+            logger.debug(f"Test item successfully written to table: {doi_table}")
+        else:
+            logger.error(f"Unable to write item to table: {doi_table}")
+        self.client.delete_item(
+            TableName=doi_table,
+            Key={"doi": {"S": "SmokeTest"}},
+        )
+        logger.debug(f"Test item deleted from table: {doi_table}")
+        return f"Write permissions confirmed for table: {doi_table}"
+
     def retrieve_doi_items_from_database(self, doi_table):
         """Retrieve all DOI items from database table."""
         response = self.client.scan(

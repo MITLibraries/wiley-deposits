@@ -20,6 +20,46 @@ def test_dynamodb_add_doi_item_to_database(dynamodb_class):
 
 
 @mock_dynamodb2
+def test_check_read_permissions_success(
+    dynamodb_class,
+):
+    dynamodb_class.client.create_table(
+        TableName="test_dois",
+        KeySchema=[
+            {"AttributeName": "doi", "KeyType": "HASH"},
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "doi", "AttributeType": "S"},
+        ],
+    )
+    dynamodb_class.client.describe_table(TableName="test_dois")
+    result = dynamodb_class.check_read_permissions("test_dois")
+    assert result == "Read permissions confirmed for table: test_dois"
+
+
+@mock_dynamodb2
+def test_check_write_permissions_success(dynamodb_class):
+    dynamodb_class.client.create_table(
+        TableName="test_dois",
+        KeySchema=[
+            {"AttributeName": "doi", "KeyType": "HASH"},
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "doi", "AttributeType": "S"},
+        ],
+    )
+    result = dynamodb_class.check_write_permissions("test_dois")
+
+    assert result == "Write permissions confirmed for table: test_dois"
+    assert "Item" not in (
+        dynamodb_class.client.get_item(
+            TableName="test_dois",
+            Key={"doi": {"S": "SmokeTest"}},
+        )
+    )
+
+
+@mock_dynamodb2
 def test_dynamodb_retrieve_doi_items_from_database(dynamodb_class):
     dynamodb_class.client.create_table(
         TableName="test_dois",
