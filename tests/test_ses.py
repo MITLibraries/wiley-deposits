@@ -4,27 +4,22 @@ from email.mime.multipart import MIMEMultipart
 import boto3
 import pytest
 from botocore.exceptions import ClientError
-from moto import mock_ses
 from moto.core import set_initial_no_auth_action_count
 
 from awd import ses
 
 
-@mock_ses
-def test_check_permissions_success(ses_class):
-    ses_client = boto3.client("ses", region_name="us-east-1")
-    ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+def test_check_permissions_success(mocked_ses, ses_class):
     result = ses_class.check_permissions("noreply@example.com", "mock@mock.mock")
     assert (
         result == "SES send from permissions confirmed for address: noreply@example.com"
     )
 
 
-@mock_ses
-@set_initial_no_auth_action_count(1)
-def test_check_permissions_raises_error_if_address_not_verified(test_aws_user):
-    ses_client = boto3.client("ses", region_name="us-east-1")
-    ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+@set_initial_no_auth_action_count(0)
+def test_check_permissions_raises_error_if_address_not_verified(
+    mocked_ses, test_aws_user
+):
     os.environ["AWS_ACCESS_KEY_ID"] = test_aws_user["AccessKeyId"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = test_aws_user["SecretAccessKey"]
     boto3.setup_default_session()
@@ -47,10 +42,7 @@ def test_ses_create_email(ses_class):
     assert message.get_payload()[0].get_filename() == "attachment"
 
 
-@mock_ses
-def test_ses_send_email(ses_class):
-    ses_client = boto3.client("ses", region_name="us-east-1")
-    ses_client.verify_email_identity(EmailAddress="noreply@example.com")
+def test_ses_send_email(mocked_ses, ses_class):
     message = message = MIMEMultipart()
     response = ses_class.send_email(
         "noreply@example.com",

@@ -7,7 +7,7 @@ def test_get_dois_from_spreadsheet():
         assert doi == "10.1002/term.3131"
 
 
-def test_get_crossref_work_from_dois(web_mock):
+def test_get_crossref_work_from_dois(mocked_web):
     doi = "10.1002/term.3131"
     work = crossref.get_work_record_from_doi("http://example.com/works/", doi)
     assert work["message"]["title"] == [
@@ -15,7 +15,9 @@ def test_get_crossref_work_from_dois(web_mock):
     ]
 
 
-def test_get_metadata_extract_from(web_mock, crossref_value_dict, crossref_work_record):
+def test_get_metadata_extract_from(
+    mocked_web, crossref_value_dict, crossref_work_record
+):
     value_dict = crossref.get_metadata_extract_from(crossref_work_record)
     assert value_dict == crossref_value_dict
 

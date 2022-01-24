@@ -8,7 +8,7 @@ from moto.core import set_initial_no_auth_action_count
 from awd import s3
 
 
-def test_s3_check_permissions_success(s3_mock, s3_class):
+def test_s3_check_permissions_success(mocked_s3, s3_class):
     s3_class.put_file(
         str({"metadata": {"key": "dc.title", "value": "A Title"}}),
         "awd",
@@ -22,7 +22,7 @@ def test_s3_check_permissions_success(s3_mock, s3_class):
 
 @set_initial_no_auth_action_count(1)
 def test_s3_check_permissions_raises_error_if_no_permission(
-    s3_mock, s3_class, test_aws_user
+    mocked_s3, s3_class, test_aws_user
 ):
     s3_class.put_file(
         str({"metadata": {"key": "dc.title", "value": "A Title"}}),
@@ -41,7 +41,7 @@ def test_s3_check_permissions_raises_error_if_no_permission(
     )
 
 
-def test_s3_filter_files_in_bucket_with_matching_csv(s3_mock, s3_class):
+def test_s3_filter_files_in_bucket_with_matching_csv(mocked_s3, s3_class):
     s3_class.put_file(
         "test1,test2,test3,test4",
         "awd",
@@ -52,7 +52,7 @@ def test_s3_filter_files_in_bucket_with_matching_csv(s3_mock, s3_class):
         assert file == "test.csv"
 
 
-def test_s3_filter_files_in_bucket_without_matching_csv(s3_mock, s3_class):
+def test_s3_filter_files_in_bucket_without_matching_csv(mocked_s3, s3_class):
     s3_class.put_file(
         "test1,test2,test3,test4",
         "awd",
@@ -63,7 +63,7 @@ def test_s3_filter_files_in_bucket_without_matching_csv(s3_mock, s3_class):
         assert file == "test.csv"
 
 
-def test_archive_file_in_bucket(s3_mock, s3_class):
+def test_archive_file_in_bucket(mocked_s3, s3_class):
     s3_class.put_file(
         "test1,test2,test3,test4",
         "awd",
@@ -84,7 +84,7 @@ def test_archive_file_in_bucket(s3_mock, s3_class):
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-def test_s3_put_file(s3_mock, s3_class):
+def test_s3_put_file(mocked_s3, s3_class):
     assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
     s3_class.put_file(
         str({"metadata": {"key": "dc.title", "value": "A Title"}}),

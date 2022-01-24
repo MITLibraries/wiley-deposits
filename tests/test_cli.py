@@ -1,8 +1,5 @@
 import logging
 
-import boto3
-from moto import mock_dynamodb2, mock_ses, mock_sqs
-
 from awd.cli import cli, doi_to_be_added, doi_to_be_retried
 from awd.status import Status
 
@@ -33,31 +30,23 @@ def test_doi_to_be_retried_false():
     assert validation_status is False
 
 
-@mock_dynamodb2
-@mock_ses
-@mock_sqs
 def test_deposit_success(
-    caplog, web_mock, s3_mock, s3_class, sqs_class, submission_message_body, runner
+    caplog,
+    mocked_web,
+    mocked_dynamodb,
+    mocked_s3,
+    mocked_ses,
+    mocked_sqs,
+    s3_class,
+    sqs_class,
+    submission_message_body,
+    runner,
 ):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
             open("tests/fixtures/doi_success.csv", "rb"),
             "awd",
             "doi_success.csv",
-        )
-        sqs = boto3.resource("sqs", region_name="us-east-1")
-        sqs.create_queue(QueueName="mock-input-queue")
-        ses_client = boto3.client("ses", region_name="us-east-1")
-        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
-        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
-        dynamodb.create_table(
-            TableName="test_dois",
-            KeySchema=[
-                {"AttributeName": "doi", "KeyType": "HASH"},
-            ],
-            AttributeDefinitions=[
-                {"AttributeName": "doi", "AttributeType": "S"},
-            ],
         )
         assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 1
         result = runner.invoke(
@@ -105,26 +94,21 @@ def test_deposit_success(
         assert "Logs sent to" in caplog.text
 
 
-@mock_dynamodb2
-@mock_ses
-def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runner):
+def test_deposit_insufficient_metadata(
+    caplog,
+    mocked_web,
+    mocked_dynamodb,
+    mocked_s3,
+    mocked_ses,
+    mocked_sqs,
+    s3_class,
+    runner,
+):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
             open("tests/fixtures/doi_insufficient_metadata.csv", "rb"),
             "awd",
             "doi_insufficient_metadata.csv",
-        )
-        ses_client = boto3.client("ses", region_name="us-east-1")
-        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
-        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
-        dynamodb.create_table(
-            TableName="test_dois",
-            KeySchema=[
-                {"AttributeName": "doi", "KeyType": "HASH"},
-            ],
-            AttributeDefinitions=[
-                {"AttributeName": "doi", "AttributeType": "S"},
-            ],
         )
         result = runner.invoke(
             cli,
@@ -162,26 +146,21 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
         assert "Logs sent to" in caplog.text
 
 
-@mock_dynamodb2
-@mock_ses
-def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
+def test_deposit_pdf_unavailable(
+    caplog,
+    mocked_web,
+    mocked_dynamodb,
+    mocked_s3,
+    mocked_ses,
+    mocked_sqs,
+    s3_class,
+    runner,
+):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
             open("tests/fixtures/doi_pdf_unavailable.csv", "rb"),
             "awd",
             "doi_pdf_unavailable.csv",
-        )
-        ses_client = boto3.client("ses", region_name="us-east-1")
-        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
-        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
-        dynamodb.create_table(
-            TableName="test_dois",
-            KeySchema=[
-                {"AttributeName": "doi", "KeyType": "HASH"},
-            ],
-            AttributeDefinitions=[
-                {"AttributeName": "doi", "AttributeType": "S"},
-            ],
         )
         result = runner.invoke(
             cli,
@@ -216,22 +195,17 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
         assert "Logs sent to" in caplog.text
 
 
-@mock_dynamodb2
-@mock_ses
-def test_deposit_s3_nonexistent_bucket(caplog, web_mock, s3_mock, s3_class, runner):
+def test_deposit_s3_nonexistent_bucket(
+    caplog,
+    mocked_web,
+    mocked_dynamodb,
+    mocked_s3,
+    mocked_ses,
+    mocked_sqs,
+    s3_class,
+    runner,
+):
     with caplog.at_level(logging.DEBUG):
-        ses_client = boto3.client("ses", region_name="us-east-1")
-        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
-        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
-        dynamodb.create_table(
-            TableName="test_dois",
-            KeySchema=[
-                {"AttributeName": "doi", "KeyType": "HASH"},
-            ],
-            AttributeDefinitions=[
-                {"AttributeName": "doi", "AttributeType": "S"},
-            ],
-        )
         result = runner.invoke(
             cli,
             [
@@ -264,11 +238,13 @@ def test_deposit_s3_nonexistent_bucket(caplog, web_mock, s3_mock, s3_class, runn
         ) in caplog.text
 
 
-@mock_dynamodb2
-@mock_ses
-@mock_sqs
 def test_listen_success(
     caplog,
+    mocked_dynamodb,
+    mocked_s3,
+    mocked_ses,
+    mocked_sqs,
+    dynamodb_class,
     sqs_class,
     result_failure_message_attributes,
     result_success_message_attributes,
@@ -277,10 +253,6 @@ def test_listen_success(
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        sqs = boto3.resource("sqs", region_name="us-east-1")
-        sqs.create_queue(QueueName="mock-output-queue")
-        ses_client = boto3.client("ses", region_name="us-east-1")
-        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         sqs_class.send(
             "https://queue.amazonaws.com/123456789012/",
             "mock-output-queue",
@@ -293,17 +265,7 @@ def test_listen_success(
             result_success_message_attributes,
             result_success_message_body,
         )
-        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
-        dynamodb.create_table(
-            TableName="test_dois",
-            KeySchema=[
-                {"AttributeName": "doi", "KeyType": "HASH"},
-            ],
-            AttributeDefinitions=[
-                {"AttributeName": "doi", "AttributeType": "S"},
-            ],
-        )
-        dynamodb.put_item(
+        dynamodb_class.client.put_item(
             TableName="test_dois",
             Item={
                 "doi": {"S": "111.1/1111"},
@@ -311,7 +273,7 @@ def test_listen_success(
                 "attempts": {"S": "1"},
             },
         )
-        dynamodb.put_item(
+        dynamodb_class.client.put_item(
             TableName="test_dois",
             Item={
                 "doi": {"S": "222.2/2222"},
@@ -348,13 +310,8 @@ def test_listen_success(
         assert "Logs sent to" in caplog.text
 
 
-@mock_dynamodb2
-@mock_ses
-@mock_sqs
-def test_listen_failure(caplog, runner):
+def test_listen_failure(caplog, mocked_ses, runner):
     with caplog.at_level(logging.DEBUG):
-        ses_client = boto3.client("ses", region_name="us-east-1")
-        ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         result = runner.invoke(
             cli,
             [

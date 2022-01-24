@@ -1,55 +1,22 @@
-from moto import mock_dynamodb2
-
 from awd.status import Status
 
 
-@mock_dynamodb2
-def test_dynamodb_add_doi_item_to_database(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
-    dynamodb_class.client.describe_table(TableName="test_dois")
+def test_dynamodb_add_doi_item_to_database(mocked_dynamodb, dynamodb_class):
     add_response = dynamodb_class.add_doi_item_to_database("test_dois", "222.2/2222")
     assert add_response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-@mock_dynamodb2
 def test_check_read_permissions_success(
+    mocked_dynamodb,
     dynamodb_class,
 ):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
-    dynamodb_class.client.describe_table(TableName="test_dois")
+
     result = dynamodb_class.check_read_permissions("test_dois")
     assert result == "Read permissions confirmed for table: test_dois"
 
 
-@mock_dynamodb2
-def test_check_write_permissions_success(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
+def test_check_write_permissions_success(mocked_dynamodb, dynamodb_class):
     result = dynamodb_class.check_write_permissions("test_dois")
-
     assert result == "Write permissions confirmed for table: test_dois"
     assert "Item" not in (
         dynamodb_class.client.get_item(
@@ -59,17 +26,7 @@ def test_check_write_permissions_success(dynamodb_class):
     )
 
 
-@mock_dynamodb2
-def test_dynamodb_retrieve_doi_items_from_database(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
+def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_class):
     dynamodb_class.client.put_item(
         TableName="test_dois",
         Item={
@@ -88,17 +45,7 @@ def test_dynamodb_retrieve_doi_items_from_database(dynamodb_class):
     ]
 
 
-@mock_dynamodb2
-def test_dynamodb_retry_threshold_exceeded_false(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
+def test_dynamodb_retry_threshold_exceeded_false(mocked_dynamodb, dynamodb_class):
     dynamodb_class.client.put_item(
         TableName="test_dois",
         Item={
@@ -113,17 +60,7 @@ def test_dynamodb_retry_threshold_exceeded_false(dynamodb_class):
     assert validation_status is False
 
 
-@mock_dynamodb2
-def test_dynamodb_retry_threshold_exceeded_true(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
+def test_dynamodb_retry_threshold_exceeded_true(mocked_dynamodb, dynamodb_class):
     dynamodb_class.client.put_item(
         TableName="test_dois",
         Item={
@@ -138,17 +75,7 @@ def test_dynamodb_retry_threshold_exceeded_true(dynamodb_class):
     assert validation_status is True
 
 
-@mock_dynamodb2
-def test_dynamodb_update_doi_item_attempts_in_database(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
+def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb_class):
     dynamodb_class.client.put_item(
         TableName="test_dois",
         Item={
@@ -181,17 +108,7 @@ def test_dynamodb_update_doi_item_attempts_in_database(dynamodb_class):
     }
 
 
-@mock_dynamodb2
-def test_dynamodb_update_doi_item_status_in_database(dynamodb_class):
-    dynamodb_class.client.create_table(
-        TableName="test_dois",
-        KeySchema=[
-            {"AttributeName": "doi", "KeyType": "HASH"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "doi", "AttributeType": "S"},
-        ],
-    )
+def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_class):
     dynamodb_class.client.put_item(
         TableName="test_dois",
         Item={
