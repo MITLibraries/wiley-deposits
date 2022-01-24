@@ -96,12 +96,6 @@ def cli(
 
 @cli.command()
 @click.option(
-    "--doi_file_path",
-    required=True,
-    default=config.DOI_FILE_PATH,
-    help="The path of the spreadsheet containing DOIs to be searched.",
-)
-@click.option(
     "--metadata_url",
     required=True,
     default=config.METADATA_URL,
@@ -134,7 +128,6 @@ def cli(
 @click.pass_context
 def deposit(
     ctx,
-    doi_file_path,
     metadata_url,
     content_url,
     bucket,
@@ -146,71 +139,88 @@ def deposit(
     s3_client = s3.S3()
     sqs_client = sqs.SQS()
     dynamodb_client = dynamodb.DynamoDB()
-    dois = crossref.get_dois_from_spreadsheet(doi_file_path)
-    doi_items = dynamodb_client.retrieve_doi_items_from_database(ctx.obj["doi_table"])
-    for doi in dois:
-        if doi_to_be_added(doi, doi_items):
-            dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
-        elif doi_to_be_retried(doi, doi_items) is False:
-            continue
-        dynamodb_client.update_doi_item_status_in_database(
-            ctx.obj["doi_table"], doi, Status.PROCESSING.value
+
+    try:
+        s3_client.client.list_objects_v2(Bucket=bucket)
+    except ClientError as e:
+        logger.error(
+            f"Error accessing bucket: {bucket}, {e.response['Error']['Message']}"
         )
-        dynamodb_client.update_doi_item_attempts_in_database(ctx.obj["doi_table"], doi)
-        crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
-        if crossref.is_valid_response(doi, crossref_work_record) is False:
+        exit
+    for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
+        dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
+        doi_items = dynamodb_client.retrieve_doi_items_from_database(
+            ctx.obj["doi_table"]
+        )
+        for doi in dois:
+            if doi_to_be_added(doi, doi_items):
+                dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
+            elif doi_to_be_retried(doi, doi_items) is False:
+                continue
             dynamodb_client.update_doi_item_status_in_database(
-                ctx.obj["doi_table"], doi, Status.FAILED.value
+                ctx.obj["doi_table"], doi, Status.PROCESSING.value
             )
-            continue
-        value_dict = crossref.get_metadata_extract_from(crossref_work_record)
-        metadata = crossref.create_dspace_metadata_from_dict(
-            value_dict, "config/metadata_mapping.json"
-        )
-        if crossref.is_valid_dspace_metadata(metadata) is False:
-            dynamodb_client.update_doi_item_status_in_database(
-                ctx.obj["doi_table"], doi, Status.FAILED.value
+            dynamodb_client.update_doi_item_attempts_in_database(
+                ctx.obj["doi_table"], doi
             )
-            continue
-        wiley_response = wiley.get_wiley_response(content_url, doi)
-        if wiley.is_valid_response(doi, wiley_response) is False:
-            dynamodb_client.update_doi_item_status_in_database(
-                ctx.obj["doi_table"], doi, Status.FAILED.value
+            crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
+            if crossref.is_valid_response(doi, crossref_work_record) is False:
+                dynamodb_client.update_doi_item_status_in_database(
+                    ctx.obj["doi_table"], doi, Status.FAILED.value
+                )
+                continue
+            value_dict = crossref.get_metadata_extract_from(crossref_work_record)
+            metadata = crossref.create_dspace_metadata_from_dict(
+                value_dict, "config/metadata_mapping.json"
             )
-            continue
-        doi_file_name = doi.replace("/", "-")  # 10.1002/term.3131 to 10.1002-term.3131
-        files_dict = s3.create_files_dict(
-            doi_file_name, json.dumps(metadata), wiley_response.content
-        )
-        try:
-            for file in files_dict:
-                s3_client.put_file(file["file_content"], bucket, file["file_name"])
-        except ClientError as e:
-            logger.error(
-                f"Upload failed: {file['file_name']}, {e.response['Error']['Message']}"
+            if crossref.is_valid_dspace_metadata(metadata) is False:
+                dynamodb_client.update_doi_item_status_in_database(
+                    ctx.obj["doi_table"], doi, Status.FAILED.value
+                )
+                continue
+            wiley_response = wiley.get_wiley_response(content_url, doi)
+            if wiley.is_valid_response(doi, wiley_response) is False:
+                dynamodb_client.update_doi_item_status_in_database(
+                    ctx.obj["doi_table"], doi, Status.FAILED.value
+                )
+                continue
+            doi_file_name = doi.replace(
+                "/", "-"
+            )  # 10.1002/term.3131 to 10.1002-term.3131
+            files_dict = s3.create_files_dict(
+                doi_file_name, json.dumps(metadata), wiley_response.content
             )
-            dynamodb_client.update_doi_item_status_in_database(
-                ctx.obj["doi_table"], doi, Status.FAILED.value
+            try:
+                for file in files_dict:
+                    s3_client.put_file(file["file_content"], bucket, file["file_name"])
+            except ClientError as e:
+                logger.error(
+                    f"Upload failed: {file['file_name']},"
+                    f"{e.response['Error']['Message']}"
+                )
+                dynamodb_client.update_doi_item_status_in_database(
+                    ctx.obj["doi_table"], doi, Status.FAILED.value
+                )
+                continue
+            bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
+            metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
+            dss_message_attributes = sqs.create_dss_message_attributes(
+                doi, "wiley", ctx.obj["sqs_output_queue"]
             )
-            continue
-        bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
-        metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
-        dss_message_attributes = sqs.create_dss_message_attributes(
-            doi, "wiley", ctx.obj["sqs_output_queue"]
-        )
-        dss_message_body = sqs.create_dss_message_body(
-            "DSpace@MIT",
-            collection_handle,
-            metadata_s3_uri,
-            f"{doi_file_name}.pdf",
-            bitstream_s3_uri,
-        )
-        sqs_client.send(
-            ctx.obj["sqs_base_url"],
-            sqs_input_queue,
-            dss_message_attributes,
-            dss_message_body,
-        )
+            dss_message_body = sqs.create_dss_message_body(
+                "DSpace@MIT",
+                collection_handle,
+                metadata_s3_uri,
+                f"{doi_file_name}.pdf",
+                bitstream_s3_uri,
+            )
+            sqs_client.send(
+                ctx.obj["sqs_base_url"],
+                sqs_input_queue,
+                dss_message_attributes,
+                dss_message_body,
+            )
+        s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
 
     ses_client = ses.SES()

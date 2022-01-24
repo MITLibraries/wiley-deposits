@@ -40,6 +40,11 @@ def test_deposit_success(
     caplog, web_mock, s3_mock, s3_class, sqs_class, submission_message_body, runner
 ):
     with caplog.at_level(logging.DEBUG):
+        s3_class.put_file(
+            open("tests/fixtures/doi_success.csv", "rb"),
+            "awd",
+            "doi_success.csv",
+        )
         sqs = boto3.resource("sqs", region_name="us-east-1")
         sqs.create_queue(QueueName="mock-input-queue")
         ses_client = boto3.client("ses", region_name="us-east-1")
@@ -54,6 +59,7 @@ def test_deposit_success(
                 {"AttributeName": "doi", "AttributeType": "S"},
             ],
         )
+        assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 1
         result = runner.invoke(
             cli,
             [
@@ -68,8 +74,6 @@ def test_deposit_success(
                 "--log_recipient_email",
                 "mock@mock.mock",
                 "deposit",
-                "--doi_file_path",
-                "tests/fixtures/doi_success.csv",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -96,6 +100,7 @@ def test_deposit_success(
         )
         for message in messages:
             assert message["Body"] == submission_message_body
+        assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 3
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
 
@@ -104,6 +109,11 @@ def test_deposit_success(
 @mock_ses
 def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
+        s3_class.put_file(
+            open("tests/fixtures/doi_insufficient_metadata.csv", "rb"),
+            "awd",
+            "doi_insufficient_metadata.csv",
+        )
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
@@ -130,8 +140,6 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
                 "--log_recipient_email",
                 "mock@mock.mock",
                 "deposit",
-                "--doi_file_path",
-                "tests/fixtures/doi_insufficient_metadata.csv",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -149,7 +157,7 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
             "Insufficient metadata for 10.1002/nome.tadata, missing title or URL"
             in caplog.text
         )
-        assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
+        assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 1
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
 
@@ -158,6 +166,11 @@ def test_deposit_insufficient_metadata(caplog, web_mock, s3_mock, s3_class, runn
 @mock_ses
 def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
+        s3_class.put_file(
+            open("tests/fixtures/doi_pdf_unavailable.csv", "rb"),
+            "awd",
+            "doi_pdf_unavailable.csv",
+        )
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
@@ -184,8 +197,6 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
                 "--log_recipient_email",
                 "mock@mock.mock",
                 "deposit",
-                "--doi_file_path",
-                "tests/fixtures/doi_pdf_unavailable.csv",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -200,14 +211,14 @@ def test_deposit_pdf_unavailable(caplog, web_mock, s3_mock, s3_class, runner):
         )
         assert result.exit_code == 0
         assert "A PDF could not be retrieved for DOI: 10.1002/none.0000" in caplog.text
-        assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
+        assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 1
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
 
 
 @mock_dynamodb2
 @mock_ses
-def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
+def test_deposit_s3_nonexistent_bucket(caplog, web_mock, s3_mock, s3_class, runner):
     with caplog.at_level(logging.DEBUG):
         ses_client = boto3.client("ses", region_name="us-east-1")
         ses_client.verify_email_identity(EmailAddress="noreply@example.com")
@@ -235,8 +246,6 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
                 "--doi_table",
                 "test_dois",
                 "deposit",
-                "--doi_file_path",
-                "tests/fixtures/doi_success.csv",
                 "--metadata_url",
                 "http://example.com/works/",
                 "--content_url",
@@ -249,11 +258,10 @@ def test_deposit_s3_upload_failed(caplog, web_mock, s3_mock, s3_class, runner):
                 "123.4/5678",
             ],
         )
-        assert result.exit_code == 0
-        assert "Upload failed: 10.1002-term.3131.json" in caplog.text
-        assert "Contents" not in s3_class.client.list_objects(Bucket="awd")
-        assert "Submission process has completed" in caplog.text
-        assert "Logs sent to" in caplog.text
+        assert result.exit_code == 1
+        assert (
+            "Error accessing bucket: not-a-bucket, The specified bucket does not exist"
+        ) in caplog.text
 
 
 @mock_dynamodb2
