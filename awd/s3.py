@@ -29,6 +29,33 @@ class S3:
             f"S3 list objects and get object permissions confirmed for bucket: {bucket}"
         )
 
+    def filter_files_in_bucket(self, bucket, file_type, excluded_prefix):
+        """Retrieve file with the specified file extension in the specified bucket without
+        the excluded prefix."""
+        paginator = self.client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket)
+        for object in [
+            object
+            for page in pages
+            for object in page["Contents"]
+            if object["Key"].endswith(file_type)
+            and excluded_prefix not in object["Key"]
+        ]:
+            yield object["Key"]
+
+    def archive_file_with_new_key(self, bucket, key, archived_key_prefix):
+        """Change the key of the specified file in the specified bucket to archive it from
+        processing"""
+        self.client.copy_object(
+            Bucket=bucket,
+            CopySource=f"{bucket}/{key}",
+            Key=f"{archived_key_prefix}/{key}",
+        )
+        self.client.delete_object(
+            Bucket=bucket,
+            Key=key,
+        )
+
     def put_file(self, file, bucket, key):
         """Put a file in a specified S3 bucket with a specified key."""
         response = self.client.put_object(
