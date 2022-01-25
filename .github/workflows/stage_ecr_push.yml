@@ -1,0 +1,20 @@
+# Borrowed heavily from mario
+name: Stage
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    name: Deploy staging build
+    runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.WILEY_DEPLOY_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.WILEY_DEPLOY_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run: make dist
+      - name: Push image
+        run: make publish
