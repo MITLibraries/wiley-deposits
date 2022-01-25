@@ -5,12 +5,18 @@ import boto3
 import pytest
 import requests_mock
 from click.testing import CliRunner
-from moto import mock_iam, mock_s3, mock_ssm
+from moto import mock_dynamodb2, mock_iam, mock_s3, mock_ses, mock_sqs, mock_ssm
 
 from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.ses import SES
 from awd.sqs import SQS
+from awd.ssm import SSM
+
+
+@pytest.fixture(scope="function")
+def runner():
+    return CliRunner()
 
 
 @pytest.fixture(scope="function")
@@ -58,16 +64,13 @@ def test_aws_user(aws_credentials):
 
 
 @pytest.fixture(scope="function")
-def s3_mock(aws_credentials):
-    with mock_s3():
-        s3 = boto3.client("s3", region_name="us-east-1")
-        s3.create_bucket(Bucket="awd")
-        yield s3
+def dynamodb_class():
+    return DynamoDB()
 
 
 @pytest.fixture(scope="function")
-def dynamodb_class():
-    return DynamoDB()
+def s3_class():
+    return S3()
 
 
 @pytest.fixture(scope="function")
@@ -81,12 +84,70 @@ def sqs_class():
 
 
 @pytest.fixture(scope="function")
-def s3_class():
-    return S3()
+def ssm_class():
+    return SSM()
+
+
+@pytest.fixture(scope="function")
+def mocked_dynamodb(aws_credentials):
+    with mock_dynamodb2():
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="test_dois",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
+        yield dynamodb
+
+
+@pytest.fixture(scope="function")
+def mocked_s3(aws_credentials):
+    with mock_s3():
+        s3 = boto3.client("s3", region_name="us-east-1")
+        s3.create_bucket(Bucket="awd")
+        yield s3
+
+
+@pytest.fixture(scope="function")
+def mocked_ses(aws_credentials):
+    with mock_ses():
+        ses = boto3.client("ses", region_name="us-east-1")
+        ses.verify_email_identity(EmailAddress="noreply@example.com")
+        yield ses
+
+
+@pytest.fixture(scope="function")
+def mocked_sqs(aws_credentials):
+    with mock_sqs():
+        sqs = boto3.resource("sqs", region_name="us-east-1")
+        sqs.create_queue(QueueName="mock-input-queue")
+        sqs.create_queue(QueueName="mock-output-queue")
+        yield sqs
+
+
+@pytest.fixture(scope="function")
+def mocked_ssm(aws_credentials):
+    with mock_ssm():
+        ssm = boto3.client("ssm", region_name="us-east-1")
+        ssm.put_parameter(
+            Name="/test/example/collection_handle",
+            Value="111.1/111",
+            Type="SecureString",
+        )
+        ssm.put_parameter(
+            Name="/test/example/secure",
+            Value="true",
+            Type="SecureString",
+        )
+        yield ssm
 
 
 @pytest.fixture()
-def web_mock(crossref_work_record, wiley_pdf):
+def mocked_web(crossref_work_record, wiley_pdf):
     with requests_mock.Mocker() as m:
         request_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -134,25 +195,13 @@ def crossref_value_dict():
 
 
 @pytest.fixture()
+def wiley_pdf():
+    return open("tests/fixtures/wiley.pdf", "rb").read()
+
+
+@pytest.fixture()
 def dspace_metadata():
     return json.loads(open("tests/fixtures/dspace_metadata.json", "r").read())
-
-
-@pytest.fixture(scope="function")
-def mocked_ssm(aws_credentials):
-    with mock_ssm():
-        ssm = boto3.client("ssm", region_name="us-east-1")
-        ssm.put_parameter(
-            Name="/test/example/collection_handle",
-            Value="111.1/111",
-            Type="SecureString",
-        )
-        ssm.put_parameter(
-            Name="/test/example/secure",
-            Value="true",
-            Type="SecureString",
-        )
-        yield ssm
 
 
 @pytest.fixture()
@@ -205,11 +254,6 @@ def result_success_message_body():
     return result_success_message_body
 
 
-@pytest.fixture(scope="function")
-def runner():
-    return CliRunner()
-
-
 @pytest.fixture()
 def submission_message_attributes():
     submission_message_attributes = {
@@ -235,8 +279,3 @@ def submission_message_body():
         ],
     }
     return json.dumps(submission_message_body)
-
-
-@pytest.fixture()
-def wiley_pdf():
-    return open("tests/fixtures/wiley.pdf", "rb").read()
