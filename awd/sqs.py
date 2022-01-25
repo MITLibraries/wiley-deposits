@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 class SQS:
     """An SQS class that provides a generic boto3 SQS client."""
 
-    def __init__(self):
-        self.client = client("sqs", region_name="us-east-1")
+    def __init__(self, region):
+        self.client = client("sqs", region_name=region)
 
     def check_read_permissions(self, sqs_base_url, queue_name):
         """Verify that messages can be received from the specified queue."""

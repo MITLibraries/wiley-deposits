@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 class SES:
     """An SES class that provides a generic boto3 SES client."""
 
-    def __init__(self):
-        self.client = client("ses", region_name="us-east-1")
+    def __init__(self, region):
+        self.client = client("ses", region_name=region)
 
     def check_permissions(self, source_email_address, recipient_email_address):
         """Verify that an email can be sent from the specified email address"""
