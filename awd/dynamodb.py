@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 class DynamoDB:
     """An DynamoDB class that provides a generic boto3 DynamoDB client."""
 
-    def __init__(self):
+    def __init__(self, region):
         self.client = boto3.client(
             "dynamodb",
-            region_name="us-east-1",
+            region_name=region,
         )
 
     def add_doi_item_to_database(self, doi_table, doi):

@@ -8,8 +8,8 @@ class SSM:
     still used by boto3. This service contains Parameter Store, which is using for
     storing values that can be retrieved via an SSM client."""
 
-    def __init__(self):
-        self.client = client("ssm", region_name="us-east-1")
+    def __init__(self, region):
+        self.client = client("ssm", region_name=region)
 
     def check_permissions(self, ssm_path):
         """Check whether we can retrieve an encrypted ssm parameter.

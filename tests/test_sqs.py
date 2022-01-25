@@ -5,7 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 from moto.core import set_initial_no_auth_action_count
 
-from awd import sqs
+from awd import config, sqs
 
 
 def test_check_read_permissions_success(
@@ -43,7 +43,7 @@ def test_check_read_permissions_raises_error_if_no_permission(
     os.environ["AWS_ACCESS_KEY_ID"] = test_aws_user["AccessKeyId"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = test_aws_user["SecretAccessKey"]
     boto3.setup_default_session()
-    sqs_class = sqs.SQS()
+    sqs_class = sqs.SQS(config.AWS_REGION_NAME)
     with pytest.raises(ClientError) as e:
         sqs_class.check_read_permissions(
             "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
@@ -88,7 +88,7 @@ def test_check_write_permissions_raises_error_if_no_permission(
     os.environ["AWS_ACCESS_KEY_ID"] = test_aws_user["AccessKeyId"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = test_aws_user["SecretAccessKey"]
     boto3.setup_default_session()
-    sqs_class = sqs.SQS()
+    sqs_class = sqs.SQS(config.AWS_REGION_NAME)
     with pytest.raises(ClientError) as e:
         sqs_class.check_write_permissions(
             "https://queue.amazonaws.com/123456789012/", "empty_input_queue"

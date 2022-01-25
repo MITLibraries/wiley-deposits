@@ -13,7 +13,7 @@ logger.debug("Configuring awd for current env: %s", ENV)
 AWS_REGION_NAME = "us-east-1"
 
 if ENV == "stage" or ENV == "prod":
-    ssm = SSM()
+    ssm = SSM(AWS_REGION_NAME)
     DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}dynamodb_table_name")
     METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley_metadata_url")
     CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley_content_url")

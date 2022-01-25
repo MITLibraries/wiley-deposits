@@ -41,6 +41,12 @@ def doi_to_be_retried(doi, doi_items):
 
 @click.group()
 @click.option(
+    "--aws_region",
+    required=True,
+    default=config.AWS_REGION_NAME,
+    help="The AWS region to use for clients.",
+)
+@click.option(
     "--doi_table",
     required=True,
     default=config.DOI_TABLE,
@@ -68,11 +74,12 @@ def doi_to_be_retried(doi, doi_items):
     "--log_recipient_email",
     required=True,
     default=config.LOG_RECIPIENT_EMAIL,
-    help="The email address receiving the logs. Repeatable",
+    help="The email address receiving the logs.",
 )
 @click.pass_context
 def cli(
     ctx,
+    aws_region,
     doi_table,
     sqs_base_url,
     sqs_output_queue,
@@ -87,6 +94,7 @@ def cli(
     )
     ctx.ensure_object(dict)
     ctx.obj["stream"] = stream
+    ctx.obj["aws_region"] = aws_region
     ctx.obj["doi_table"] = doi_table
     ctx.obj["sqs_base_url"] = sqs_base_url
     ctx.obj["sqs_output_queue"] = sqs_output_queue
@@ -137,8 +145,8 @@ def deposit(
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     stream = ctx.obj["stream"]
     s3_client = s3.S3()
-    sqs_client = sqs.SQS()
-    dynamodb_client = dynamodb.DynamoDB()
+    sqs_client = sqs.SQS(ctx.obj["aws_region"])
+    dynamodb_client = dynamodb.DynamoDB(ctx.obj["aws_region"])
 
     try:
         s3_client.client.list_objects_v2(Bucket=bucket)
@@ -223,7 +231,7 @@ def deposit(
         s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
 
-    ses_client = ses.SES()
+    ses_client = ses.SES(ctx.obj["aws_region"])
     message = ses_client.create_email(
         f"Automated Wiley deposit errors {date}",
         stream.getvalue(),
@@ -254,8 +262,8 @@ def listen(
 ):
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     stream = ctx.obj["stream"]
-    sqs = SQS()
-    dynamodb_client = DynamoDB()
+    sqs = SQS(ctx.obj["aws_region"])
+    dynamodb_client = DynamoDB(ctx.obj["aws_region"])
     try:
         for message in sqs.receive(
             ctx.obj["sqs_base_url"], ctx.obj["sqs_output_queue"]
@@ -298,7 +306,7 @@ def listen(
         logger.error(
             f"Failure while retrieving SQS messages, {e.response['Error']['Message']}"
         )
-    ses_client = SES()
+    ses_client = SES(ctx.obj["aws_region"])
     message = ses_client.create_email(
         f"DSS results {date}",
         stream.getvalue(),

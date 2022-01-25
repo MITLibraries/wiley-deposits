@@ -6,7 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 from moto.core import set_initial_no_auth_action_count
 
-from awd import ses
+from awd import config, ses
 
 
 def test_check_permissions_success(mocked_ses, ses_class):
@@ -23,7 +23,7 @@ def test_check_permissions_raises_error_if_address_not_verified(
     os.environ["AWS_ACCESS_KEY_ID"] = test_aws_user["AccessKeyId"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = test_aws_user["SecretAccessKey"]
     boto3.setup_default_session()
-    ses_class = ses.SES()
+    ses_class = ses.SES(config.AWS_REGION_NAME)
     with pytest.raises(ClientError) as e:
         ses_class.check_permissions("noreply@example.com", "mock@mock.mock")
     assert e.value.response["Error"]["Message"] == (

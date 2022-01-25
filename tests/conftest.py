@@ -7,6 +7,7 @@ import requests_mock
 from click.testing import CliRunner
 from moto import mock_dynamodb2, mock_iam, mock_s3, mock_ses, mock_sqs, mock_ssm
 
+from awd import config
 from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.ses import SES
@@ -65,7 +66,7 @@ def test_aws_user(aws_credentials):
 
 @pytest.fixture(scope="function")
 def dynamodb_class():
-    return DynamoDB()
+    return DynamoDB(config.AWS_REGION_NAME)
 
 
 @pytest.fixture(scope="function")
@@ -75,17 +76,17 @@ def s3_class():
 
 @pytest.fixture(scope="function")
 def ses_class():
-    return SES()
+    return SES(config.AWS_REGION_NAME)
 
 
 @pytest.fixture(scope="function")
 def sqs_class():
-    return SQS()
+    return SQS(config.AWS_REGION_NAME)
 
 
 @pytest.fixture(scope="function")
 def ssm_class():
-    return SSM()
+    return SSM(config.AWS_REGION_NAME)
 
 
 @pytest.fixture(scope="function")
