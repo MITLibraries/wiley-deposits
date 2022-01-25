@@ -23,6 +23,12 @@ promote: ## Promote the current staging build to production
 check-permissions-stage: ## Check infrastructure permissions on the staging deplpyment
 	aws ecs run-task --cluster wiley-stage --task-definition wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-0b860205e2831b8d0,subnet-039b5e11cd30385c3],securityGroups=[sg-0dbcd7c12a35e44a0],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["check-permissions"]}]}'
 
+run-deposit-stage: ## Run the stage-deposit command
+	aws ecs run-task --cluster wiley-stage --task-definition wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-0b860205e2831b8d0,subnet-039b5e11cd30385c3],securityGroups=[sg-0dbcd7c12a35e44a0],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["deposit"]}]}'
+
+run-listen-stage: ## Run the stage listen command
+	aws ecs run-task --cluster wiley-stage --task-definition wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-0b860205e2831b8d0,subnet-039b5e11cd30385c3],securityGroups=[sg-0dbcd7c12a35e44a0],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
+
 lint: bandit black flake8 isort
 
 bandit:
