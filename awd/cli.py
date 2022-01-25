@@ -337,21 +337,21 @@ def check_permissions():
         happen and the test message will remain in the queue. It is best to only run
         this command when the configured output queues are empty.
     """
-    dynamodb = DynamoDB()
+    dynamodb = DynamoDB(config.AWS_REGION_NAME)
     logger.info(dynamodb.check_read_permissions(config.DOI_TABLE))
     logger.info(dynamodb.check_write_permissions(config.DOI_TABLE))
 
     s3 = S3()
     logger.info(s3.check_permissions(config.BUCKET))
 
-    ses = SES()
+    ses = SES(config.AWS_REGION_NAME)
     logger.info(ses.check_permissions(config.LOG_SOURCE_EMAIL, "mock@mock.mock"))
 
-    ssm = SSM()
+    ssm = SSM(config.AWS_REGION_NAME)
     for path in [config.DSS_SSM_PATH, config.WILEY_SSM_PATH]:
         logger.info(ssm.check_permissions(path))
 
-    sqs = SQS()
+    sqs = SQS(config.AWS_REGION_NAME)
     logger.info(
         sqs.check_write_permissions(config.SQS_BASE_URL, config.SQS_INPUT_QUEUE)
     )
