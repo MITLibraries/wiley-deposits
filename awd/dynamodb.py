@@ -23,7 +23,7 @@ class DynamoDB:
             TableName=doi_table,
             Item={
                 "doi": {"S": doi},
-                "status": {"S": str(Status.PROCESSING)},
+                "status": {"S": str(Status.PROCESSING.value)},
                 "attempts": {"S": "0"},
             },
         )
