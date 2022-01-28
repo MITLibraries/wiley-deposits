@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Status(Enum):
-    PROCESSING = 1
-    SUCCESS = 2
-    FAILED = 3
-    PERMANENTLY_FAILED = 4
+    UNPROCESSED = 1
+    MESSAGE_SENT = 2
+    SUCCESS = 3
+    FAILED = 4
