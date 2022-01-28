@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
@@ -25,6 +26,7 @@ class DynamoDB:
                 "doi": {"S": doi},
                 "status": {"S": str(Status.PROCESSING.value)},
                 "attempts": {"S": "0"},
+                "last_modified": {"S": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
             },
         )
         logger.debug(f"{doi} added to table")
@@ -87,6 +89,9 @@ class DynamoDB:
             Key={"doi": {"S": doi}},
         )
         item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
+        item["Item"]["last_modified"]["S"] = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         response = self.client.put_item(TableName=doi_table, Item=item["Item"])
         logger.debug(
             f'{doi} attempts updated to: {str(int(item["Item"]["attempts"]["S"]) + 1)}'
@@ -105,6 +110,9 @@ class DynamoDB:
             Key={"doi": {"S": doi}},
         )
         item["Item"]["status"]["S"] = str(status_code)
+        item["Item"]["last_modified"]["S"] = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         response = self.client.put_item(
             TableName=doi_table,
             Item=item["Item"],

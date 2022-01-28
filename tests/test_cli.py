@@ -317,6 +317,7 @@ def test_listen_success(
                 "doi": {"S": "111.1/1111"},
                 "status": {"S": str(Status.PROCESSING.value)},
                 "attempts": {"S": "1"},
+                "last_modified": {"S": "'2022-01-28 09:28:53"},
             },
         )
         dynamodb_class.client.put_item(
@@ -325,6 +326,7 @@ def test_listen_success(
                 "doi": {"S": "222.2/2222"},
                 "status": {"S": str(Status.PROCESSING.value)},
                 "attempts": {"S": "1"},
+                "last_modified": {"S": "'2022-01-28 10:28:53"},
             },
         )
         result = runner.invoke(
