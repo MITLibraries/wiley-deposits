@@ -27,6 +27,7 @@ class DynamoDB:
                 "attempts": {"S": "0"},
             },
         )
+        logger.debug(f"{doi} added to table")
         return response
 
     def check_read_permissions(self, doi_table):
@@ -87,6 +88,9 @@ class DynamoDB:
         )
         item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
         response = self.client.put_item(TableName=doi_table, Item=item["Item"])
+        logger.debug(
+            f'{doi} attempts updated to: {str(int(item["Item"]["attempts"]["S"]) + 1)}'
+        )
         return response
 
     def update_doi_item_status_in_database(
@@ -105,4 +109,5 @@ class DynamoDB:
             TableName=doi_table,
             Item=item["Item"],
         )
+        logger.debug(f"{doi} status updated to: {status_code}")
         return response

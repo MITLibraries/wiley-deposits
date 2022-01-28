@@ -157,40 +157,71 @@ def deposit(
         exit
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
-        doi_items = dynamodb_client.retrieve_doi_items_from_database(
-            ctx.obj["doi_table"]
-        )
+        try:
+            doi_items = dynamodb_client.retrieve_doi_items_from_database(
+                ctx.obj["doi_table"]
+            )
+        except ClientError as e:
+            logger.error(f"Table read failed: {e.response['Error']['Message']}")
+            exit
         for doi in dois:
             if doi_to_be_added(doi, doi_items):
-                dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
+                try:
+                    dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
+                except ClientError as e:
+                    logger.error(
+                        f"Table update failed: {e.response['Error']['Message']}"
+                    )
+
             elif doi_to_be_retried(doi, doi_items) is False:
                 continue
-            dynamodb_client.update_doi_item_status_in_database(
-                ctx.obj["doi_table"], doi, Status.PROCESSING.value
-            )
-            dynamodb_client.update_doi_item_attempts_in_database(
-                ctx.obj["doi_table"], doi
-            )
+            try:
+                dynamodb_client.update_doi_item_status_in_database(
+                    ctx.obj["doi_table"], doi, Status.PROCESSING.value
+                )
+            except ClientError as e:
+                logger.error(f"Table update failed: {e.response['Error']['Message']}")
+            try:
+                dynamodb_client.update_doi_item_attempts_in_database(
+                    ctx.obj["doi_table"], doi
+                )
+            except ClientError as e:
+                logger.error(f"Table update failed: {e.response['Error']['Message']}")
             crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_work_record) is False:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
+                try:
+                    dynamodb_client.update_doi_item_status_in_database(
+                        ctx.obj["doi_table"], doi, Status.FAILED.value
+                    )
+                except ClientError as e:
+                    logger.error(
+                        f"Table update failed: {e.response['Error']['Message']}"
+                    )
                 continue
             value_dict = crossref.get_metadata_extract_from(crossref_work_record)
             metadata = crossref.create_dspace_metadata_from_dict(
                 value_dict, "config/metadata_mapping.json"
             )
             if crossref.is_valid_dspace_metadata(metadata) is False:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
+                try:
+                    dynamodb_client.update_doi_item_status_in_database(
+                        ctx.obj["doi_table"], doi, Status.FAILED.value
+                    )
+                except ClientError as e:
+                    logger.error(
+                        f"Table update failed: {e.response['Error']['Message']}"
+                    )
                 continue
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
+                try:
+                    dynamodb_client.update_doi_item_status_in_database(
+                        ctx.obj["doi_table"], doi, Status.FAILED.value
+                    )
+                except ClientError as e:
+                    logger.error(
+                        f"Table update failed: {e.response['Error']['Message']}"
+                    )
                 continue
             doi_file_name = doi.replace(
                 "/", "-"
@@ -206,9 +237,14 @@ def deposit(
                     f"Upload failed: {file['file_name']},"
                     f"{e.response['Error']['Message']}"
                 )
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
+                try:
+                    dynamodb_client.update_doi_item_status_in_database(
+                        ctx.obj["doi_table"], doi, Status.FAILED.value
+                    )
+                except ClientError as e:
+                    logger.error(
+                        f"Table update failed: {e.response['Error']['Message']}"
+                    )
                 continue
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
             metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
@@ -283,13 +319,23 @@ def listen(
                 if dynamodb_client.retry_attempts_exceeded(
                     ctx.obj["doi_table"], doi, retry_threshold
                 ):
-                    dynamodb_client.update_doi_item_status_in_database(
-                        ctx.obj["doi_table"], doi, Status.PERMANENTLY_FAILED.value
-                    )
+                    try:
+                        dynamodb_client.update_doi_item_status_in_database(
+                            ctx.obj["doi_table"], doi, Status.PERMANENTLY_FAILED.value
+                        )
+                    except ClientError as e:
+                        logger.error(
+                            f"Table update failed: {e.response['Error']['Message']}"
+                        )
                 else:
-                    dynamodb_client.update_doi_item_status_in_database(
-                        ctx.obj["doi_table"], doi, Status.FAILED.value
-                    )
+                    try:
+                        dynamodb_client.update_doi_item_status_in_database(
+                            ctx.obj["doi_table"], doi, Status.FAILED.value
+                        )
+                    except ClientError as e:
+                        logger.error(
+                            f"Table update failed: {e.response['Error']['Message']}"
+                        )
             else:
                 logger.info(f'DOI: {doi}, Result: {message.get("Body")}')
                 sqs.delete(
@@ -297,10 +343,12 @@ def listen(
                     ctx.obj["sqs_output_queue"],
                     message["ReceiptHandle"],
                 )
-
+            try:
                 dynamodb_client.update_doi_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.SUCCESS.value
                 )
+            except ClientError as e:
+                logger.error(f"Table update failed: {e.response['Error']['Message']}")
         logger.debug("Messages received and deleted from output queue")
     except ClientError as e:
         logger.error(
