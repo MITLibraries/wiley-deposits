@@ -32,6 +32,8 @@ if ENV == "stage" or ENV == "prod":
         f"{WILEY_SSM_PATH}log_recipient_email"
     )
     RETRY_THRESHOLD = ssm.get_parameter_value(f"{WILEY_SSM_PATH}retry_threshold")
+    SENTRY_DSN = ssm.get_parameter_value(f"{WILEY_SSM_PATH}sentry_dsn")
+
 elif ENV == "test":
     DOI_FILE_PATH = "tests/fixtures/doi_success.csv"
     DOI_TABLE = "test_dois"
@@ -45,6 +47,7 @@ elif ENV == "test":
     LOG_SOURCE_EMAIL = "noreply@example.com"
     LOG_RECIPIENT_EMAIL = "mock@mock.mock"
     RETRY_THRESHOLD = "10"
+    SENTRY_DSN = None
 else:
     DOI_FILE_PATH = os.getenv("DOI_FILE_PATH")
     DOI_TABLE = os.getenv("DOI_TABLE")
@@ -58,3 +61,12 @@ else:
     LOG_SOURCE_EMAIL = os.getenv("LOG_SOURCE_EMAIL")
     LOG_RECIPIENT_EMAIL = os.getenv("LOG_RECIPIENT_EMAIL")
     RETRY_THRESHOLD = os.getenv("RETRY_THRESHOLD")
+    SENTRY_DSN = os.getenv("SENTRY_DSN")
+
+
+def check_sentry():
+    if SENTRY_DSN:
+        logger.info("Sending a Zero Division Error to Sentry")
+        1 / 0
+    else:
+        logger.info("No Sentry DSN found")

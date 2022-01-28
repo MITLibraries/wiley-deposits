@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 
 import click
+import sentry_sdk
 from botocore.exceptions import ClientError
 
 from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
@@ -86,6 +87,7 @@ def cli(
     log_source_email,
     log_recipient_email,
 ):
+    sentry_sdk.init(config.SENTRY_DSN, environment=config.ENV)
     stream = io.StringIO()
     logging.basicConfig(
         format="%(asctime)s %(levelname)-8s %(message)s",
