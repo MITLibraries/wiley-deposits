@@ -285,7 +285,7 @@ def listen(
                     ctx.obj["sqs_output_queue"],
                     message["ReceiptHandle"],
                 )
-                if dynamodb_client.retry_attempts_exceeded(
+                if dynamodb_client.attempts_exceeded(
                     ctx.obj["doi_table"], doi, retry_threshold
                 ):
                     dynamodb_client.update_doi_item_status_in_database(

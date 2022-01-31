@@ -9,6 +9,8 @@ from awd.status import Status
 
 logger = logging.getLogger(__name__)
 
+date_format = "%Y-%m-%d %H:%M:%S"
+
 
 class DynamoDB:
     """An DynamoDB class that provides a generic boto3 DynamoDB client."""
@@ -28,9 +30,7 @@ class DynamoDB:
                     "doi": {"S": doi},
                     "status": {"S": str(Status.PROCESSING.value)},
                     "attempts": {"S": "0"},
-                    "last_modified": {
-                        "S": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    },
+                    "last_modified": {"S": datetime.now().strftime(date_format)},
                 },
             )
             logger.debug(f"{doi} added to table")
@@ -79,7 +79,7 @@ class DynamoDB:
             doi_items.append(deserialized_item)
         return doi_items
 
-    def retry_attempts_exceeded(self, doi_table, doi, retry_threshold):
+    def attempts_exceeded(self, doi_table, doi, retry_threshold):
         """Validate whether a DOI has exceeded the retry threshold."""
         validation_status = False
         try:
@@ -103,9 +103,7 @@ class DynamoDB:
                 Key={"doi": {"S": doi}},
             )
             item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
-            item["Item"]["last_modified"]["S"] = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
             response = self.client.put_item(TableName=doi_table, Item=item["Item"])
             logger.debug(
                 f"{doi} attempts updated to: "
@@ -130,9 +128,7 @@ class DynamoDB:
                 Key={"doi": {"S": doi}},
             )
             item["Item"]["status"]["S"] = str(status_code)
-            item["Item"]["last_modified"]["S"] = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
             response = self.client.put_item(
                 TableName=doi_table,
                 Item=item["Item"],

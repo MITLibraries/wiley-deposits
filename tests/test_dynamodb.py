@@ -57,7 +57,7 @@ def test_dynamodb_retry_threshold_exceeded_false(mocked_dynamodb, dynamodb_class
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    validation_status = dynamodb_class.retry_attempts_exceeded(
+    validation_status = dynamodb_class.attempts_exceeded(
         "test_dois", "111.1/1111", "10"
     )
     assert validation_status is False
@@ -73,7 +73,7 @@ def test_dynamodb_retry_threshold_exceeded_true(mocked_dynamodb, dynamodb_class)
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    validation_status = dynamodb_class.retry_attempts_exceeded(
+    validation_status = dynamodb_class.attempts_exceeded(
         "test_dois", "111.1/1111", "10"
     )
     assert validation_status is True
