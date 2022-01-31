@@ -28,7 +28,7 @@ class DynamoDB:
                 TableName=doi_table,
                 Item={
                     "doi": {"S": doi},
-                    "status": {"S": str(Status.PROCESSING.value)},
+                    "status": {"S": str(Status.UNPROCESSED.value)},
                     "attempts": {"S": "0"},
                     "last_modified": {"S": datetime.now().strftime(date_format)},
                 },

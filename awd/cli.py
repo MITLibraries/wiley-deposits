@@ -33,7 +33,7 @@ def doi_to_be_retried(doi, doi_items):
     for doi_item in [
         d
         for d in doi_items
-        if d["doi"] == doi and d["status"] == str(Status.FAILED.value)
+        if d["doi"] == doi and d["status"] == str(Status.UNPROCESSED.value)
     ]:
         validation_status = True
         logger.debug(f"{doi} will be retried.")
@@ -169,35 +169,22 @@ def deposit(
         for doi in dois:
             if doi_to_be_added(doi, doi_items):
                 dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
-
             elif doi_to_be_retried(doi, doi_items) is False:
                 continue
-            dynamodb_client.update_doi_item_status_in_database(
-                ctx.obj["doi_table"], doi, Status.PROCESSING.value
-            )
             dynamodb_client.update_doi_item_attempts_in_database(
                 ctx.obj["doi_table"], doi
             )
             crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_work_record) is False:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
                 continue
             value_dict = crossref.get_metadata_extract_from(crossref_work_record)
             metadata = crossref.create_dspace_metadata_from_dict(
                 value_dict, "config/metadata_mapping.json"
             )
             if crossref.is_valid_dspace_metadata(metadata) is False:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
                 continue
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
-                )
                 continue
             doi_file_name = doi.replace(
                 "/", "-"
@@ -212,9 +199,6 @@ def deposit(
                 logger.error(
                     f"Upload failed: {file['file_name']},"
                     f"{e.response['Error']['Message']}"
-                )
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.FAILED.value
                 )
                 continue
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
@@ -234,6 +218,9 @@ def deposit(
                 sqs_input_queue,
                 dss_message_attributes,
                 dss_message_body,
+            )
+            dynamodb_client.update_doi_item_status_in_database(
+                ctx.obj["doi_table"], doi, Status.MESSAGE_SENT.value
             )
         s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
@@ -291,12 +278,10 @@ def listen(
                     ctx.obj["doi_table"], doi, retry_threshold
                 ):
                     dynamodb_client.update_doi_item_status_in_database(
-                        ctx.obj["doi_table"], doi, Status.PERMANENTLY_FAILED.value
-                    )
-                else:
-                    dynamodb_client.update_doi_item_status_in_database(
                         ctx.obj["doi_table"], doi, Status.FAILED.value
                     )
+                else:
+                    continue
             else:
                 logger.info(f'DOI: {doi}, Result: {message.get("Body")}')
                 sqs.delete(

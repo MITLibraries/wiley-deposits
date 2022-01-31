@@ -19,7 +19,7 @@ def test_doi_to_be_added_false():
 
 
 def test_doi_to_be_retried_true():
-    doi_items = [{"doi": "111.1/111", "status": str(Status.FAILED.value)}]
+    doi_items = [{"doi": "111.1/111", "status": str(Status.UNPROCESSED.value)}]
     validation_status = doi_to_be_retried("111.1/111", doi_items)
     assert validation_status is True
 
@@ -315,7 +315,7 @@ def test_listen_success(
             TableName="test_dois",
             Item={
                 "doi": {"S": "111.1/1111"},
-                "status": {"S": str(Status.PROCESSING.value)},
+                "status": {"S": str(Status.UNPROCESSED.value)},
                 "attempts": {"S": "1"},
                 "last_modified": {"S": "'2022-01-28 09:28:53"},
             },
@@ -324,7 +324,7 @@ def test_listen_success(
             TableName="test_dois",
             Item={
                 "doi": {"S": "222.2/2222"},
-                "status": {"S": str(Status.PROCESSING.value)},
+                "status": {"S": str(Status.UNPROCESSED.value)},
                 "attempts": {"S": "1"},
                 "last_modified": {"S": "'2022-01-28 10:28:53"},
             },
