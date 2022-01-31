@@ -62,11 +62,3 @@ else:
     LOG_RECIPIENT_EMAIL = os.getenv("LOG_RECIPIENT_EMAIL")
     RETRY_THRESHOLD = os.getenv("RETRY_THRESHOLD")
     SENTRY_DSN = os.getenv("SENTRY_DSN")
-
-
-def check_sentry():
-    if SENTRY_DSN:
-        logger.info("Sending a Zero Division Error to Sentry")
-        1 / 0
-    else:
-        logger.info("No Sentry DSN found")
