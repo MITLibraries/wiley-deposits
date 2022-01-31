@@ -157,12 +157,17 @@ def deposit(
         exit
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
-        doi_items = dynamodb_client.retrieve_doi_items_from_database(
-            ctx.obj["doi_table"]
-        )
+        try:
+            doi_items = dynamodb_client.retrieve_doi_items_from_database(
+                ctx.obj["doi_table"]
+            )
+        except ClientError as e:
+            logger.error(f"Table read failed: {e.response['Error']['Message']}")
+            exit
         for doi in dois:
             if doi_to_be_added(doi, doi_items):
                 dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
+
             elif doi_to_be_retried(doi, doi_items) is False:
                 continue
             dynamodb_client.update_doi_item_status_in_database(
@@ -280,7 +285,7 @@ def listen(
                     ctx.obj["sqs_output_queue"],
                     message["ReceiptHandle"],
                 )
-                if dynamodb_client.retry_attempts_exceeded(
+                if dynamodb_client.attempts_exceeded(
                     ctx.obj["doi_table"], doi, retry_threshold
                 ):
                     dynamodb_client.update_doi_item_status_in_database(
@@ -297,7 +302,6 @@ def listen(
                     ctx.obj["sqs_output_queue"],
                     message["ReceiptHandle"],
                 )
-
                 dynamodb_client.update_doi_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.SUCCESS.value
                 )

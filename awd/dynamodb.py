@@ -1,11 +1,15 @@
 import logging
+from datetime import datetime
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
+from botocore.exceptions import ClientError
 
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
+
+date_format = "%Y-%m-%d %H:%M:%S"
 
 
 class DynamoDB:
@@ -19,15 +23,22 @@ class DynamoDB:
 
     def add_doi_item_to_database(self, doi_table, doi):
         """Add DOI item to database table."""
-        response = self.client.put_item(
-            TableName=doi_table,
-            Item={
-                "doi": {"S": doi},
-                "status": {"S": str(Status.PROCESSING.value)},
-                "attempts": {"S": "0"},
-            },
-        )
-        return response
+        try:
+            response = self.client.put_item(
+                TableName=doi_table,
+                Item={
+                    "doi": {"S": doi},
+                    "status": {"S": str(Status.PROCESSING.value)},
+                    "attempts": {"S": "0"},
+                    "last_modified": {"S": datetime.now().strftime(date_format)},
+                },
+            )
+            logger.debug(f"{doi} added to table")
+            return response
+        except ClientError as e:
+            logger.error(
+                f"Table error while processing {doi}: {e.response['Error']['Message']}"
+            )
 
     def check_read_permissions(self, doi_table):
         """Verify that the contents of the specified table can be read."""
@@ -68,26 +79,41 @@ class DynamoDB:
             doi_items.append(deserialized_item)
         return doi_items
 
-    def retry_attempts_exceeded(self, doi_table, doi, retry_threshold):
+    def attempts_exceeded(self, doi_table, doi, retry_threshold):
         """Validate whether a DOI has exceeded the retry threshold."""
         validation_status = False
-        item = self.client.get_item(
-            TableName=doi_table,
-            Key={"doi": {"S": doi}},
-        )
-        if int(item["Item"]["attempts"]["S"]) >= int(retry_threshold):
-            validation_status = True
-        return validation_status
+        try:
+            item = self.client.get_item(
+                TableName=doi_table,
+                Key={"doi": {"S": doi}},
+            )
+            if int(item["Item"]["attempts"]["S"]) >= int(retry_threshold):
+                validation_status = True
+            return validation_status
+        except ClientError as e:
+            logger.error(
+                f"Table error while processing {doi}: {e.response['Error']['Message']}"
+            )
 
     def update_doi_item_attempts_in_database(self, doi_table, doi):
         """Increment attempts for  DOI item in database."""
-        item = self.client.get_item(
-            TableName=doi_table,
-            Key={"doi": {"S": doi}},
-        )
-        item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
-        response = self.client.put_item(TableName=doi_table, Item=item["Item"])
-        return response
+        try:
+            item = self.client.get_item(
+                TableName=doi_table,
+                Key={"doi": {"S": doi}},
+            )
+            item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
+            item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
+            response = self.client.put_item(TableName=doi_table, Item=item["Item"])
+            logger.debug(
+                f"{doi} attempts updated to: "
+                f'{str(int(item["Item"]["attempts"]["S"]) + 1)}'
+            )
+            return response
+        except ClientError as e:
+            logger.error(
+                f"Table error while processing {doi}: {e.response['Error']['Message']}"
+            )
 
     def update_doi_item_status_in_database(
         self,
@@ -96,13 +122,20 @@ class DynamoDB:
         status_code,
     ):
         """Update status for DOI item in database."""
-        item = self.client.get_item(
-            TableName=doi_table,
-            Key={"doi": {"S": doi}},
-        )
-        item["Item"]["status"]["S"] = str(status_code)
-        response = self.client.put_item(
-            TableName=doi_table,
-            Item=item["Item"],
-        )
-        return response
+        try:
+            item = self.client.get_item(
+                TableName=doi_table,
+                Key={"doi": {"S": doi}},
+            )
+            item["Item"]["status"]["S"] = str(status_code)
+            item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
+            response = self.client.put_item(
+                TableName=doi_table,
+                Item=item["Item"],
+            )
+            logger.debug(f"{doi} status updated to: {status_code}")
+            return response
+        except ClientError as e:
+            logger.error(
+                f"Table error while processing {doi}: {e.response['Error']['Message']}"
+            )

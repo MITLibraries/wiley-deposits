@@ -33,6 +33,7 @@ def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_cla
             "doi": {"S": "111.1/1111"},
             "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
+            "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
     dois = dynamodb_class.retrieve_doi_items_from_database("test_dois")
@@ -41,6 +42,7 @@ def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_cla
             "doi": "111.1/1111",
             "status": str(Status.FAILED.value),
             "attempts": "1",
+            "last_modified": "2022-01-28 10:28:53",
         }
     ]
 
@@ -52,9 +54,10 @@ def test_dynamodb_retry_threshold_exceeded_false(mocked_dynamodb, dynamodb_class
             "doi": {"S": "111.1/1111"},
             "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
+            "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    validation_status = dynamodb_class.retry_attempts_exceeded(
+    validation_status = dynamodb_class.attempts_exceeded(
         "test_dois", "111.1/1111", "10"
     )
     assert validation_status is False
@@ -67,9 +70,10 @@ def test_dynamodb_retry_threshold_exceeded_true(mocked_dynamodb, dynamodb_class)
             "doi": {"S": "111.1/1111"},
             "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "10"},
+            "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    validation_status = dynamodb_class.retry_attempts_exceeded(
+    validation_status = dynamodb_class.attempts_exceeded(
         "test_dois", "111.1/1111", "10"
     )
     assert validation_status is True
@@ -82,17 +86,17 @@ def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb
             "doi": {"S": "111.1/1111"},
             "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
+            "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
     existing_item = dynamodb_class.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
-    assert existing_item["Item"] == {
-        "attempts": {"S": "1"},
-        "doi": {"S": "111.1/1111"},
-        "status": {"S": str(Status.FAILED.value)},
-    }
+    assert existing_item["Item"]["attempts"]["S"] == "1"
+    assert existing_item["Item"]["doi"]["S"] == "111.1/1111"
+    assert existing_item["Item"]["status"]["S"] == str(Status.FAILED.value)
+    assert existing_item["Item"]["last_modified"]["S"] == "2022-01-28 10:28:53"
     update_response = dynamodb_class.update_doi_item_attempts_in_database(
         "test_dois", "111.1/1111"
     )
@@ -101,11 +105,10 @@ def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
-    assert updated_item["Item"] == {
-        "attempts": {"S": "2"},
-        "doi": {"S": "111.1/1111"},
-        "status": {"S": str(Status.FAILED.value)},
-    }
+    assert updated_item["Item"]["attempts"]["S"] == "2"
+    assert updated_item["Item"]["doi"]["S"] == "111.1/1111"
+    assert updated_item["Item"]["status"]["S"] == str(Status.FAILED.value)
+    assert updated_item["Item"]["last_modified"]["S"] != "2022-01-28 10:28:53"
 
 
 def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_class):
@@ -115,17 +118,17 @@ def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_c
             "doi": {"S": "111.1/1111"},
             "status": {"S": str(Status.FAILED.value)},
             "attempts": {"S": "1"},
+            "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
     existing_item = dynamodb_class.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
-    assert existing_item["Item"] == {
-        "attempts": {"S": "1"},
-        "doi": {"S": "111.1/1111"},
-        "status": {"S": str(Status.FAILED.value)},
-    }
+    assert existing_item["Item"]["attempts"]["S"] == "1"
+    assert existing_item["Item"]["doi"]["S"] == "111.1/1111"
+    assert existing_item["Item"]["status"]["S"] == str(Status.FAILED.value)
+    assert existing_item["Item"]["last_modified"]["S"] == "2022-01-28 10:28:53"
     update_response = dynamodb_class.update_doi_item_status_in_database(
         "test_dois", "111.1/1111", Status.PROCESSING.value
     )
@@ -134,8 +137,7 @@ def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_c
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
-    assert updated_item["Item"] == {
-        "attempts": {"S": "1"},
-        "doi": {"S": "111.1/1111"},
-        "status": {"S": str(Status.PROCESSING.value)},
-    }
+    assert updated_item["Item"]["attempts"]["S"] == "1"
+    assert updated_item["Item"]["doi"]["S"] == "111.1/1111"
+    assert updated_item["Item"]["status"]["S"] == str(Status.PROCESSING.value)
+    assert updated_item["Item"]["last_modified"]["S"] != "2022-01-28 10:28:53"
