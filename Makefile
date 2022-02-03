@@ -29,6 +29,15 @@ run-deposit-stage: ## Run the stage-deposit command
 run-listen-stage: ## Run the stage listen command
 	aws ecs run-task --cluster wiley-stage --task-definition wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-0744a5c9beeb49a20],securityGroups=[sg-051bad317b4a14803],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
 
+check-permissions-prod: ## Check infrastructure permissions on the prod deplpyment
+	aws ecs run-task --cluster wiley-prod --task-definition wiley-prod --network-configuration "awsvpcConfiguration={subnets=[subnet-0744a5c9beeb49a20],securityGroups=[sg-0f3730fd8f7ade474],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["check-permissions"]}]}'
+
+run-deposit-prod: ## Run the prod deposit command
+	aws ecs run-task --cluster wiley-prod --task-definition wiley-prod --network-configuration "awsvpcConfiguration={subnets=[subnet-0744a5c9beeb49a20],securityGroups=[sg-0f3730fd8f7ade474],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["deposit"]}]}'
+
+run-listen-prod: ## Run the prod listen command
+	aws ecs run-task --cluster wiley-prod --task-definition wiley-prod --network-configuration "awsvpcConfiguration={subnets=[subnet-0744a5c9beeb49a20],securityGroups=[sg-0f3730fd8f7ade474],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
+	
 lint: bandit black flake8 isort
 
 bandit:
