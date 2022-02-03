@@ -1,5 +1,5 @@
 # Cron job to run the run-listen-stage command
-name: Stage
+name: make run-listen-stage
 on:
   schedule:
     - cron:  "0 19 * * *" #times are in UTC, so this is 2pm et 

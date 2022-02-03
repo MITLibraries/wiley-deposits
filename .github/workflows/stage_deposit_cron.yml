@@ -1,5 +1,5 @@
 # Cron job to run the run-deposit-stage command
-name: Stage
+name: make run-deposit-stage
 on:
   schedule:
     - cron:  "0 12 * * *" #times are in UTC, so this is 7am et
