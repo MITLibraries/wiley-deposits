@@ -232,7 +232,7 @@ def result_failure_message_body():
         "ExceptionMessage": "500 Server Error: Internal Server Error",
         "ExceptionTraceback": "Full unformatted stack trace of the Exception",
     }
-    return result_failure_message_body
+    return json.dumps(result_failure_message_body)
 
 
 @pytest.fixture()
@@ -252,7 +252,7 @@ def result_success_message_body():
             }
         ],
     }
-    return result_success_message_body
+    return json.dumps(result_success_message_body)
 
 
 @pytest.fixture()

@@ -267,8 +267,9 @@ def listen(
                 .get("PackageID", {})
                 .get("StringValue")
             )
-            if "'ResultType': 'error'" in message["Body"]:
-                logger.error(f'DOI: {doi}, Result: {message.get("Body")}')
+            body = json.loads(message.get("Body"))
+            if body["ResultType"] == "error":
+                logger.error(f"DOI: {doi}, Result: {body}")
                 sqs.delete(
                     ctx.obj["sqs_base_url"],
                     ctx.obj["sqs_output_queue"],
@@ -283,7 +284,7 @@ def listen(
                 else:
                     continue
             else:
-                logger.info(f'DOI: {doi}, Result: {message.get("Body")}')
+                logger.info(f"DOI: {doi}, Result: {body}")
                 sqs.delete(
                     ctx.obj["sqs_base_url"],
                     ctx.obj["sqs_output_queue"],
