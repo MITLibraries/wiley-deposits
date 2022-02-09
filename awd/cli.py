@@ -267,7 +267,11 @@ def listen(
                 .get("PackageID", {})
                 .get("StringValue")
             )
-            body = json.loads(message.get("Body"))
+            try:
+                body = json.loads(message.get("Body"))
+            except ValueError:
+                logger.error(f"Failed to parse body of message: {message}")
+                continue
             if body["ResultType"] == "error":
                 logger.error(f"DOI: {doi}, Result: {body}")
                 sqs.delete(
