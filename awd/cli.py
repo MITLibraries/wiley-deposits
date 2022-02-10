@@ -289,7 +289,6 @@ def listen(
                     dynamodb_client.update_doi_item_status_in_database(
                         ctx.obj["doi_table"], doi, Status.UNPROCESSED.value
                     )
-                    continue
             else:
                 logger.info(f"DOI: {doi}, Result: {body}")
                 sqs.delete(
