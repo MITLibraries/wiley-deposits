@@ -144,6 +144,9 @@ def deposit(
     sqs_input_queue,
     collection_handle,
 ):
+    """Process a text file of DOIs to retrieve and send metadata and PDFs as SQS messages
+    to the DSpace Submission Service. Errors generated during the process are emailed
+    to stakeholders."""
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     stream = ctx.obj["stream"]
     s3_client = s3.S3()
@@ -254,6 +257,8 @@ def listen(
     ctx,
     retry_threshold,
 ):
+    """Retrieve messages from a DSpace Submission output queue and email the
+    results to stakeholders."""
     date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
     stream = ctx.obj["stream"]
     sqs = SQS(ctx.obj["aws_region"])
