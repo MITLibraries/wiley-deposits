@@ -118,6 +118,21 @@ def cli(
     help="The URL of the content files.",
 )
 @click.option(
+    "--content_url_domain",
+    required=True,
+    default=config.CONTENT_URL_DOMAIN,
+    help=(
+        "The domain in URL of the content files to be replaced with the Cloud Connector "
+        "URL."
+    ),
+)
+@click.option(
+    "--cloudconnector_url",
+    required=True,
+    default=config.CLOUDCONNECTOR_URL,
+    help="The Cloud Connector URL to replace the domain in the URL of the content files.",
+)
+@click.option(
     "--bucket",
     required=True,
     default=config.BUCKET,
@@ -140,6 +155,8 @@ def deposit(
     ctx,
     metadata_url,
     content_url,
+    content_url_domain,
+    cloudconnector_url,
     bucket,
     sqs_input_queue,
     collection_handle,
@@ -186,6 +203,10 @@ def deposit(
             )
             if crossref.is_valid_dspace_metadata(metadata) is False:
                 continue
+            if content_url_domain and cloudconnector_url:
+                content_url = content_url.replace(
+                    content_url_domain, cloudconnector_url
+                )
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
                 continue
