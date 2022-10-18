@@ -102,6 +102,7 @@ class DynamoDB:
                 TableName=doi_table,
                 Key={"doi": {"S": doi}},
             )
+            logger.debug("Response retrieved from DynamoDB table: %s", item)
             item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
             item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
             response = self.client.put_item(TableName=doi_table, Item=item["Item"])
@@ -110,6 +111,8 @@ class DynamoDB:
                 f'{str(int(item["Item"]["attempts"]["S"]) + 1)}'
             )
             return response
+        except KeyError as e:
+            logger.error("Key error in table while processing %s: %s", doi, e)
         except ClientError as e:
             logger.error(
                 f"Table error while processing {doi}: {e.response['Error']['Message']}"
@@ -127,6 +130,7 @@ class DynamoDB:
                 TableName=doi_table,
                 Key={"doi": {"S": doi}},
             )
+            logger.debug("Response retrieved from DynamoDB table: %s", item)
             item["Item"]["status"]["S"] = str(status_code)
             item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
             response = self.client.put_item(
@@ -135,6 +139,8 @@ class DynamoDB:
             )
             logger.debug(f"{doi} status updated to: {status_code}")
             return response
+        except KeyError as e:
+            logger.error("Key error in table while processing %s: %s", doi, e)
         except ClientError as e:
             logger.error(
                 f"Table error while processing {doi}: {e.response['Error']['Message']}"

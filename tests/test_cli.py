@@ -52,6 +52,8 @@ def test_deposit_success(
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
                 "--doi_table",
                 "test_dois",
                 "--sqs_base_url",
@@ -67,10 +69,6 @@ def test_deposit_success(
                 "http://example.com/works/",
                 "--content_url",
                 "http://example.com/doi/",
-                "--content_url_domain",
-                "example.com",
-                "--cloudconnector_url",
-                "replacement.com",
                 "--bucket",
                 "awd",
                 "--sqs_input_queue",
@@ -117,6 +115,8 @@ def test_deposit_insufficient_metadata(
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
                 "--doi_table",
                 "test_dois",
                 "--sqs_base_url",
@@ -132,10 +132,6 @@ def test_deposit_insufficient_metadata(
                 "http://example.com/works/",
                 "--content_url",
                 "http://example.com/doi/",
-                "--content_url_domain",
-                "example.com",
-                "--cloudconnector_url",
-                "replacement.com",
                 "--bucket",
                 "awd",
                 "--sqs_input_queue",
@@ -173,6 +169,8 @@ def test_deposit_pdf_unavailable(
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
                 "--doi_table",
                 "test_dois",
                 "--sqs_base_url",
@@ -188,10 +186,6 @@ def test_deposit_pdf_unavailable(
                 "http://example.com/works/",
                 "--content_url",
                 "http://example.com/doi/",
-                "--content_url_domain",
-                "example.com",
-                "--cloudconnector_url",
-                "replacement.com",
                 "--bucket",
                 "awd",
                 "--sqs_input_queue",
@@ -221,6 +215,10 @@ def test_deposit_s3_nonexistent_bucket(
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
+                "--doi_table",
+                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -236,10 +234,6 @@ def test_deposit_s3_nonexistent_bucket(
                 "http://example.com/works/",
                 "--content_url",
                 "http://example.com/doi/",
-                "--content_url_domain",
-                "example.com",
-                "--cloudconnector_url",
-                "replacement.com",
                 "--bucket",
                 "not-a-bucket",
                 "--sqs_input_queue",
@@ -273,6 +267,10 @@ def test_deposit_dynamodb_error(
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
+                "--doi_table",
+                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -288,10 +286,6 @@ def test_deposit_dynamodb_error(
                 "http://example.com/works/",
                 "--content_url",
                 "http://example.com/doi/",
-                "--content_url_domain",
-                "example.com",
-                "--cloudconnector_url",
-                "replacement.com",
                 "--bucket",
                 "awd",
                 "--sqs_input_queue",
@@ -352,6 +346,10 @@ def test_listen_success(
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
+                "--doi_table",
+                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--doi_table",
@@ -383,6 +381,10 @@ def test_listen_failure(caplog, mocked_ses, runner):
         result = runner.invoke(
             cli,
             [
+                "--log_level",
+                "INFO",
+                "--doi_table",
+                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--doi_table",

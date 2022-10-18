@@ -48,6 +48,12 @@ def doi_to_be_retried(doi, doi_items):
     help="The AWS region to use for clients.",
 )
 @click.option(
+    "--log_level",
+    required=True,
+    default=config.LOG_LEVEL,
+    help="The log level to use.",
+)
+@click.option(
     "--doi_table",
     required=True,
     default=config.DOI_TABLE,
@@ -81,17 +87,20 @@ def doi_to_be_retried(doi, doi_items):
 def cli(
     ctx,
     aws_region,
+    log_level,
     doi_table,
     sqs_base_url,
     sqs_output_queue,
     log_source_email,
     log_recipient_email,
 ):
-    sentry_sdk.init(config.SENTRY_DSN, environment=config.ENV)
+    sentry_dsn = config.SENTRY_DSN
+    if sentry_dsn and sentry_dsn.lower() != "none":
+        sentry_sdk.init(sentry_dsn, environment=config.ENV)
     stream = io.StringIO()
     logging.basicConfig(
         format="%(asctime)s %(levelname)-8s %(message)s",
-        level=logging.INFO,
+        level=getattr(logging, log_level) if log_level else logging.INFO,
         handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
     )
     ctx.ensure_object(dict)
@@ -118,21 +127,6 @@ def cli(
     help="The URL of the content files.",
 )
 @click.option(
-    "--content_url_domain",
-    required=True,
-    default=config.CONTENT_URL_DOMAIN,
-    help=(
-        "The domain in URL of the content files to be replaced with the Cloud Connector "
-        "URL."
-    ),
-)
-@click.option(
-    "--cloudconnector_url",
-    required=True,
-    default=config.CLOUDCONNECTOR_URL,
-    help="The Cloud Connector URL to replace the domain in the URL of the content files.",
-)
-@click.option(
     "--bucket",
     required=True,
     default=config.BUCKET,
@@ -155,8 +149,6 @@ def deposit(
     ctx,
     metadata_url,
     content_url,
-    content_url_domain,
-    cloudconnector_url,
     bucket,
     sqs_input_queue,
     collection_handle,
@@ -203,10 +195,6 @@ def deposit(
             )
             if crossref.is_valid_dspace_metadata(metadata) is False:
                 continue
-            if content_url_domain and cloudconnector_url:
-                content_url = content_url.replace(
-                    content_url_domain, cloudconnector_url
-                )
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
                 continue
