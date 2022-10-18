@@ -12,15 +12,12 @@ logger.debug("Configuring awd for current env: %s", ENV)
 
 AWS_REGION_NAME = "us-east-1"
 
-if ENV == "stage" or ENV == "prod":
+if ENV in ["dev", "stage", "prod"]:
     ssm = SSM(AWS_REGION_NAME)
+    LOG_LEVEL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}app-log-level")
     DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}dynamodb-table-name")
-    CLOUDCONNECTOR_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}cloudconnector-url")
     METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley-metadata-url")
     CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley-content-url")
-    CONTENT_URL_DOMAIN = ssm.get_parameter_value(
-        f"{WILEY_SSM_PATH}wiley-content-url-replaced-string"
-    )
     BUCKET = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley-s3-bucket-id")
     SQS_BASE_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}sqs-base-url")
     SQS_INPUT_QUEUE = ssm.get_parameter_value(f"{DSS_SSM_PATH}dss-input-queue")
@@ -39,12 +36,11 @@ if ENV == "stage" or ENV == "prod":
     SENTRY_DSN = ssm.get_parameter_value(f"{WILEY_SSM_PATH}sentry-dsn")
 
 elif ENV == "test":
+    LOG_LEVEL = "INFO"
     DOI_FILE_PATH = "tests/fixtures/doi_success.csv"
     DOI_TABLE = "test_dois"
-    CLOUDCONNECTOR_URL = "replacement.com"
     METADATA_URL = "http://example.com/works/"
     CONTENT_URL = "http://example.com/doi/"
-    CONTENT_URL_DOMAIN = "example.com"
     BUCKET = "awd"
     SQS_BASE_URL = "https://queue.amazonaws.com/123456789012/"
     SQS_INPUT_QUEUE = "mock-input-queue"
@@ -55,12 +51,11 @@ elif ENV == "test":
     RETRY_THRESHOLD = "10"
     SENTRY_DSN = None
 else:
+    LOG_LEVEL = os.getenv("LOG_LEVEL")
     DOI_FILE_PATH = os.getenv("DOI_FILE_PATH")
     DOI_TABLE = os.getenv("DOI_TABLE")
-    CLOUDCONNECTOR_URL = os.getenv("CLOUDCONNECTOR_URL")
     METADATA_URL = os.getenv("METADATA_URL")
     CONTENT_URL = os.getenv("CONTENT_URL")
-    CONTENT_URL_DOMAIN = os.getenv("CONTENT_URL_DOMAIN")
     BUCKET = os.getenv("BUCKET")
     SQS_BASE_URL = os.getenv("SQS_BASE_URL")
     SQS_INPUT_QUEUE = os.getenv("SQS_INPUT_QUEUE")

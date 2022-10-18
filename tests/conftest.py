@@ -155,18 +155,18 @@ def mocked_web(crossref_work_record, wiley_pdf):
             "(KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
         }
         m.get(
-            "http://replacement.com/doi/10.1002/term.3131",
+            "http://example.com/doi/10.1002/term.3131",
             text="Forbidden",
             status_code=403,
         )
         m.get(
-            "http://replacement.com/doi/10.1002/term.3131",
+            "http://example.com/doi/10.1002/term.3131",
             content=wiley_pdf,
             headers={"Content-Type": "application/pdf; charset=UTF-8"},
             request_headers=request_headers,
         )
         m.get(
-            "http://replacement.com/doi/10.1002/none.0000",
+            "http://example.com/doi/10.1002/none.0000",
             headers={"Content-Type": "application/html; charset=UTF-8"},
             request_headers=request_headers,
         )
