@@ -12,7 +12,6 @@ from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.ses import SES
 from awd.sqs import SQS
-from awd.ssm import SSM
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
@@ -340,9 +339,6 @@ def check_permissions():
     """Confirm AWD infrastructure has deployed properly with correct permissions to all
     expected resources given the current env configuration.
 
-    Note: Only useful in stage and prod envs, as this command requires SSM access which
-        does not get configured in dev.
-
     Note: Checking SQS write permissions does write a message to each configured output
         queue. The test message gets deleted as part of the process, however if there
         are already more than 10 messages in the output queue that delete may not
@@ -358,10 +354,6 @@ def check_permissions():
 
     ses = SES(config.AWS_REGION_NAME)
     logger.info(ses.check_permissions(config.LOG_SOURCE_EMAIL, "mock@mock.mock"))
-
-    ssm = SSM(config.AWS_REGION_NAME)
-    for path in [config.DSS_SSM_PATH, config.WILEY_SSM_PATH]:
-        logger.info(ssm.check_permissions(path))
 
     sqs = SQS(config.AWS_REGION_NAME)
     logger.info(
