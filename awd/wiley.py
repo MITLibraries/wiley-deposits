@@ -13,7 +13,7 @@ headers = {
 def get_wiley_response(url, doi):
     """Get response from Wiley server based on a DOI."""
     logger.debug("Requesting PDF for %s%s", url, doi)
-    response = requests.get(f"{url}{doi}", headers=headers)
+    response = requests.get(f"{url}{doi}", headers=headers, timeout=30)
     logger.debug("Response code retrieved from Wiley server for %s: %s", doi, response)
     return response
 

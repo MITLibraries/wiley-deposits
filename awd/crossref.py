@@ -17,7 +17,11 @@ def get_dois_from_spreadsheet(file):
 def get_work_record_from_doi(api_url, doi):
     """Retrieve Crossref works based on a DOI"""
     crossref_work_record = requests.get(
-        f"{api_url}{doi}", params={"mailto": "dspace-lib@mit.edu"}
+        f"{api_url}{doi}",
+        params={
+            "mailto": "dspace-lib@mit.edu",
+        },
+        timeout=30,
     ).json()
     return crossref_work_record
 

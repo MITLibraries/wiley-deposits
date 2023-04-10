@@ -5,7 +5,7 @@ import boto3
 import pytest
 import requests_mock
 from click.testing import CliRunner
-from moto import mock_dynamodb2, mock_iam, mock_s3, mock_ses, mock_sqs
+from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 
 from awd import config
 from awd.dynamodb import DynamoDB
@@ -84,9 +84,10 @@ def sqs_class():
 
 @pytest.fixture(scope="function")
 def mocked_dynamodb(aws_credentials):
-    with mock_dynamodb2():
+    with mock_dynamodb():
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
         dynamodb.create_table(
+            BillingMode="PAY_PER_REQUEST",
             TableName="test_dois",
             KeySchema=[
                 {"AttributeName": "doi", "KeyType": "HASH"},

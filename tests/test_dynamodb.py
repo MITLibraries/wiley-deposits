@@ -10,7 +10,6 @@ def test_check_read_permissions_success(
     mocked_dynamodb,
     dynamodb_class,
 ):
-
     result = dynamodb_class.check_read_permissions("test_dois")
     assert result == "Read permissions confirmed for table: test_dois"
 
