@@ -5,14 +5,13 @@ import boto3
 import pytest
 import requests_mock
 from click.testing import CliRunner
-from moto import mock_dynamodb2, mock_iam, mock_s3, mock_ses, mock_sqs, mock_ssm
+from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 
 from awd import config
 from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.ses import SES
 from awd.sqs import SQS
-from awd.ssm import SSM
 
 
 @pytest.fixture(scope="function")
@@ -48,7 +47,6 @@ def test_aws_user(aws_credentials):
                         "ses:SendRawEmail",
                         "sqs:ReceiveMessage",
                         "sqs:SendMessage",
-                        "ssm:GetParameter",
                     ],
                     "Resource": "*",
                 },
@@ -85,15 +83,11 @@ def sqs_class():
 
 
 @pytest.fixture(scope="function")
-def ssm_class():
-    return SSM(config.AWS_REGION_NAME)
-
-
-@pytest.fixture(scope="function")
 def mocked_dynamodb(aws_credentials):
-    with mock_dynamodb2():
+    with mock_dynamodb():
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
         dynamodb.create_table(
+            BillingMode="PAY_PER_REQUEST",
             TableName="test_dois",
             KeySchema=[
                 {"AttributeName": "doi", "KeyType": "HASH"},
@@ -128,23 +122,6 @@ def mocked_sqs(aws_credentials):
         sqs.create_queue(QueueName="mock-input-queue")
         sqs.create_queue(QueueName="mock-output-queue")
         yield sqs
-
-
-@pytest.fixture(scope="function")
-def mocked_ssm(aws_credentials):
-    with mock_ssm():
-        ssm = boto3.client("ssm", region_name="us-east-1")
-        ssm.put_parameter(
-            Name="/test/example/collection_handle",
-            Value="111.1/111",
-            Type="SecureString",
-        )
-        ssm.put_parameter(
-            Name="/test/example/secure",
-            Value="true",
-            Type="SecureString",
-        )
-        yield ssm
 
 
 @pytest.fixture()

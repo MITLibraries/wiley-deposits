@@ -1,43 +1,15 @@
 import logging
 import os
 
-from awd.ssm import SSM
-
 ENV = os.getenv("WORKSPACE")
-DSS_SSM_PATH = f'{os.getenv("DSS_SSM_PATH")}'
-WILEY_SSM_PATH = f'{os.getenv("WILEY_SSM_PATH")}'
 
 logger = logging.getLogger(__name__)
 logger.debug("Configuring awd for current env: %s", ENV)
 
 AWS_REGION_NAME = "us-east-1"
 
-if ENV in ["dev", "stage", "prod"]:
-    ssm = SSM(AWS_REGION_NAME)
-    LOG_LEVEL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}app-log-level")
-    DOI_TABLE = ssm.get_parameter_value(f"{WILEY_SSM_PATH}dynamodb-table-name")
-    METADATA_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley-metadata-url")
-    CONTENT_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley-content-url")
-    BUCKET = ssm.get_parameter_value(f"{WILEY_SSM_PATH}wiley-s3-bucket-id")
-    SQS_BASE_URL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}sqs-base-url")
-    SQS_INPUT_QUEUE = ssm.get_parameter_value(f"{DSS_SSM_PATH}dss-input-queue")
-    SQS_OUTPUT_QUEUE = ssm.get_parameter_value(
-        f"{DSS_SSM_PATH}dss-output-queues"
-    ).split(",")[1]
-
-    COLLECTION_HANDLE = ssm.get_parameter_value(
-        f"{WILEY_SSM_PATH}wiley-collection-handle"
-    )
-    LOG_SOURCE_EMAIL = ssm.get_parameter_value(f"{WILEY_SSM_PATH}log-source-email")
-    LOG_RECIPIENT_EMAIL = ssm.get_parameter_value(
-        f"{WILEY_SSM_PATH}log-recipient-email"
-    )
-    RETRY_THRESHOLD = ssm.get_parameter_value(f"{WILEY_SSM_PATH}retry-threshold")
-    SENTRY_DSN = ssm.get_parameter_value(f"{WILEY_SSM_PATH}sentry-dsn")
-
-elif ENV == "test":
+if ENV == "test":
     LOG_LEVEL = "INFO"
-    DOI_FILE_PATH = "tests/fixtures/doi_success.csv"
     DOI_TABLE = "test_dois"
     METADATA_URL = "http://example.com/works/"
     CONTENT_URL = "http://example.com/doi/"
@@ -52,7 +24,6 @@ elif ENV == "test":
     SENTRY_DSN = None
 else:
     LOG_LEVEL = os.getenv("LOG_LEVEL")
-    DOI_FILE_PATH = os.getenv("DOI_FILE_PATH")
     DOI_TABLE = os.getenv("DOI_TABLE")
     METADATA_URL = os.getenv("METADATA_URL")
     CONTENT_URL = os.getenv("CONTENT_URL")

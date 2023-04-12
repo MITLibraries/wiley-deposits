@@ -11,7 +11,7 @@ boto3 = "*"
 sentry-sdk = "*"
 
 [dev-packages]
-black = "==21.7b0"
+black = "*"
 isort = "*"
 flake8 = "*" 
 pylama = "*"
@@ -22,7 +22,7 @@ pytest-cov = "*"
 moto = "*"
 
 [requires]
-python_version = "3.9"
+python_version = "3.11"
 
 [scripts]
 awd  = "python -c \"from awd.cli import cli; cli()\""
