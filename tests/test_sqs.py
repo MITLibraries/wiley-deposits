@@ -121,7 +121,7 @@ def test_sqs_delete_success(
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-def test_sqs_delete_failure(sqs_class):
+def test_sqs_delete_failure(mocked_sqs, sqs_class):
     with pytest.raises(ClientError):
         sqs_class.delete(
             "https://queue.amazonaws.com/123456789012/", "non-existent", "12345678"
@@ -148,7 +148,7 @@ def test_sqs_receive_success(
         assert message["MessageAttributes"] == result_success_message_attributes
 
 
-def test_sqs_receive_failure(sqs_class):
+def test_sqs_receive_failure(mocked_sqs, sqs_class):
     with pytest.raises(ClientError):
         messages = sqs_class.receive(
             "https://queue.amazonaws.com/123456789012/", "non-existent"
@@ -170,7 +170,7 @@ def test_sqs_send_success(
 
 
 def test_sqs_send_failure(
-    sqs_class, submission_message_attributes, submission_message_body
+    mocked_sqs, sqs_class, submission_message_attributes, submission_message_body
 ):
     with pytest.raises(ClientError):
         sqs_class.send(

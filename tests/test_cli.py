@@ -376,7 +376,7 @@ def test_listen_success(
         assert "Logs sent to" in caplog.text
 
 
-def test_listen_failure(caplog, mocked_ses, runner):
+def test_listen_failure(caplog, mocked_ses, mocked_sqs, runner):
     with caplog.at_level(logging.DEBUG):
         result = runner.invoke(
             cli,

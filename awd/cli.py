@@ -9,7 +9,6 @@ from botocore.exceptions import ClientError
 
 from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
 from awd.dynamodb import DynamoDB
-from awd.s3 import S3
 from awd.ses import SES
 from awd.sqs import SQS
 from awd.status import Status
@@ -332,35 +331,3 @@ def listen(
         logger.debug(f"Logs sent to {ctx.obj['log_recipient_email']}")
     except ClientError as e:
         logger.error(f"Failed to send logs: {e.response['Error']['Message']}")
-
-
-@cli.command()
-def check_permissions():
-    """Confirm AWD infrastructure has deployed properly with correct permissions to all
-    expected resources given the current env configuration.
-
-    Note: Checking SQS write permissions does write a message to each configured output
-        queue. The test message gets deleted as part of the process, however if there
-        are already more than 10 messages in the output queue that delete may not
-        happen and the test message will remain in the queue. It is best to only run
-        this command when the configured output queues are empty.
-    """
-    dynamodb = DynamoDB(config.AWS_REGION_NAME)
-    logger.info(dynamodb.check_read_permissions(config.DOI_TABLE))
-    logger.info(dynamodb.check_write_permissions(config.DOI_TABLE))
-
-    s3 = S3()
-    logger.info(s3.check_permissions(config.BUCKET))
-
-    ses = SES(config.AWS_REGION_NAME)
-    logger.info(ses.check_permissions(config.LOG_SOURCE_EMAIL, "mock@mock.mock"))
-
-    sqs = SQS(config.AWS_REGION_NAME)
-    logger.info(
-        sqs.check_write_permissions(config.SQS_BASE_URL, config.SQS_INPUT_QUEUE)
-    )
-    logger.info(
-        sqs.check_read_permissions(config.SQS_BASE_URL, config.SQS_OUTPUT_QUEUE)
-    )
-
-    logger.info(f"All permissions confirmed for env: {config.ENV}")
