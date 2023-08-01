@@ -1,11 +1,11 @@
-### This is the Terraform-generated dev-build.yml workflow for the wiley-deposits-dev app repository ###
+### This is the Terraform-generated dev-build.yml workflow for the wiley-deposits-stage app repository ###
 ### If this is a Lambda repo, uncomment the FUNCTION line at the end of the document     ###
 ### If the container requires any additional pre-build commands, uncomment and edit      ###
 ### the PREBUILD line at the end of the document.                                        ###
-name: Dev Container Build and Deploy
+name: Stage Container Build and Deploy
 on:
   workflow_dispatch:
-  pull_request:
+  push:
     branches:
       - main
     paths-ignore:
@@ -13,12 +13,12 @@ on:
 
 jobs:
   deploy:
-    name: Dev Container Deploy
-    uses: mitlibraries/.github/.github/workflows/ecr-shared-deploy-dev.yml@main
+    name: Stage Container Deploy
+    uses: mitlibraries/.github/.github/workflows/ecr-shared-deploy-stage.yml@main
     secrets: inherit
     with:
       AWS_REGION: "us-east-1"
-      GHA_ROLE: "wiley-deposits-gha-dev"
-      ECR: "wiley-deposits-dev"
+      GHA_ROLE: "wiley-deposits-gha-stage"
+      ECR: "wiley-deposits-stage"
       # FUNCTION: ""
       # PREBUILD: 

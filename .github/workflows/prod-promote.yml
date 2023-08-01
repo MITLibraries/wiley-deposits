@@ -1,0 +1,21 @@
+### This is the Terraform-generated prod-promote.yml workflow for the wiley-deposits-prod repository. ###
+### If this is a Lambda repo, uncomment the FUNCTION line at the end of the document.         ###
+name: Prod Container Promote
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Prod Container Promote
+    uses: mitlibraries/.github/.github/workflows/ecr-shared-promote-prod.yml@main
+    secrets: inherit
+    with:
+      AWS_REGION: "us-east-1"
+      GHA_ROLE_STAGE: wiley-deposits-gha-stage
+      GHA_ROLE_PROD: wiley-deposits-gha-prod
+      ECR_STAGE: "wiley-deposits-stage"
+      ECR_PROD: "wiley-deposits-prod"
+      # FUNCTION: ""
+ 
