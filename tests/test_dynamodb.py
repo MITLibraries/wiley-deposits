@@ -6,25 +6,6 @@ def test_dynamodb_add_doi_item_to_database(mocked_dynamodb, dynamodb_class):
     assert add_response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-def test_check_read_permissions_success(
-    mocked_dynamodb,
-    dynamodb_class,
-):
-    result = dynamodb_class.check_read_permissions("test_dois")
-    assert result == "Read permissions confirmed for table: test_dois"
-
-
-def test_check_write_permissions_success(mocked_dynamodb, dynamodb_class):
-    result = dynamodb_class.check_write_permissions("test_dois")
-    assert result == "Write permissions confirmed for table: test_dois"
-    assert "Item" not in (
-        dynamodb_class.client.get_item(
-            TableName="test_dois",
-            Key={"doi": {"S": "SmokeTest"}},
-        )
-    )
-
-
 def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_class):
     dynamodb_class.client.put_item(
         TableName="test_dois",

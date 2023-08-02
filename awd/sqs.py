@@ -12,49 +12,6 @@ class SQS:
     def __init__(self, region):
         self.client = client("sqs", region_name=region)
 
-    def check_read_permissions(self, sqs_base_url, queue_name):
-        """Verify that messages can be received from the specified queue."""
-        self.client.receive_message(
-            QueueUrl=f"{sqs_base_url}{queue_name}",
-            MaxNumberOfMessages=10,
-            MessageAttributeNames=["All"],
-        )
-        logger.debug(f"Able to access queue: {queue_name}")
-        return f"SQS read permissions confirmed for queue: {queue_name}"
-
-    def check_write_permissions(self, sqs_base_url, queue_name):
-        """Verify that messages can be written to the specified queue. During
-        this test, a message is written and deleted from the queue."""
-        response = self.send(
-            sqs_base_url,
-            queue_name,
-            {"PackageID": {"DataType": "String", "StringValue": "SmokeTest"}},
-            {"TestBody": "Testing write permissions"},
-        )
-        message_id = response["MessageId"]
-        if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-            logger.debug(
-                f"Test message successfully written to queue '{queue_name}' with message "
-                f"ID '{message_id}'"
-            )
-        else:
-            logger.error(
-                f"Unable to verify that message with ID '{message_id}' was "
-                f"successfully written to queue: {queue_name}"
-            )
-        messages = self.receive(
-            sqs_base_url,
-            queue_name,
-        )
-        for message in messages:
-            if message["MessageId"] == message_id:
-                self.delete(sqs_base_url, queue_name, message["ReceiptHandle"])
-                logger.debug(
-                    f"Test message with ID '{message_id}' deleted from queue: "
-                    "{queue_name}"
-                )
-        return f"SQS write permissions confirmed for queue: {queue_name}"
-
     def delete(self, sqs_base_url, queue_name, receipt_handle):
         """Delete message from SQS queue."""
         logger.debug(f"Deleting {receipt_handle} from SQS queue: {queue_name}")

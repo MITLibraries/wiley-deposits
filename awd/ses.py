@@ -13,14 +13,6 @@ class SES:
     def __init__(self, region):
         self.client = client("ses", region_name=region)
 
-    def check_permissions(self, source_email_address, recipient_email_address):
-        """Verify that an email can be sent from the specified email address"""
-        self.send_email(source_email_address, recipient_email_address, MIMEMultipart())
-        logger.debug(f"Email sent from: {source_email_address}")
-        return (
-            f"SES send from permissions confirmed for address: {source_email_address}"
-        )
-
     def create_email(
         self,
         subject,
