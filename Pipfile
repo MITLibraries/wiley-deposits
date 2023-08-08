@@ -4,22 +4,22 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-click = "*"
-coveralls = "*"
-smart-open = "*"
 boto3 = "*"
+click = "*"
 sentry-sdk = "*"
+smart-open = "*"
 
 [dev-packages]
 black = "*"
-isort = "*"
-flake8 = "*" 
-pylama = "*"
-bandit = "*"
-pytest = "*"
-requests-mock = "*"
-pytest-cov = "*"
+boto3-stubs = {extras = ["essential"], version = "*"}
+coveralls = "*"
 moto = "*"
+mypy = "*"
+pytest = "*"
+pytest-cov = "*"
+requests-mock = "*"
+ruff = "*"
+types-requests = "*"
 
 [requires]
 python_version = "3.11"

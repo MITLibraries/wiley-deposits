@@ -70,17 +70,17 @@ coveralls: test
 
 
 ### Linting commands ###
-lint: bandit black flake8 isort ## Lint the repo
-
-bandit:
-	pipenv run bandit -r awd
+lint: black safety
 
 black:
 	pipenv run black --check --diff .
 
-flake8:
-	pipenv run flake8 .
+safety:
+	pipenv check
+	pipenv verify
 
-isort:
-	pipenv run isort . --diff
-	
+# Apply changes to resolve any linting errors
+lint-apply: black-apply
+
+black-apply: 
+	pipenv run black .
