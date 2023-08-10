@@ -1,7 +1,14 @@
 import json
 import logging
+from typing import Any, Iterator, Mapping
 
 from boto3 import client
+from mypy_boto3_sqs.type_defs import (
+    EmptyResponseMetadataTypeDef,
+    MessageAttributeValueTypeDef,
+    MessageTypeDef,
+    SendMessageResultTypeDef,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +16,12 @@ logger = logging.getLogger(__name__)
 class SQS:
     """An SQS class that provides a generic boto3 SQS client."""
 
-    def __init__(self, region):
+    def __init__(self, region: str) -> None:
         self.client = client("sqs", region_name=region)
 
-    def delete(self, sqs_base_url, queue_name, receipt_handle):
+    def delete(
+        self, sqs_base_url: str, queue_name: str, receipt_handle: str
+    ) -> EmptyResponseMetadataTypeDef:
         """Delete message from SQS queue."""
         logger.debug(f"Deleting {receipt_handle} from SQS queue: {queue_name}")
         response = self.client.delete_message(
@@ -22,7 +31,13 @@ class SQS:
         logger.debug(f"Message deleted from SQS queue: {response}")
         return response
 
-    def send(self, sqs_base_url, queue_name, message_attributes, message_body):
+    def send(
+        self,
+        sqs_base_url: str,
+        queue_name: str,
+        message_attributes: Mapping[str, MessageAttributeValueTypeDef],
+        message_body: str,
+    ) -> SendMessageResultTypeDef:
         """Send message via SQS."""
         logger.debug(f"Sending message to SQS queue: {queue_name}")
         response = self.client.send_message(
@@ -35,9 +50,9 @@ class SQS:
 
     def receive(
         self,
-        sqs_base_url,
-        queue_name,
-    ):
+        sqs_base_url: str,
+        queue_name: str,
+    ) -> Iterator[MessageTypeDef]:
         """Receive message via SQS."""
         logger.debug(f"Receiving messages from SQS queue: {queue_name}")
         while True:
@@ -57,7 +72,9 @@ class SQS:
                 break
 
 
-def create_dss_message_attributes(package_id, submission_source, output_queue):
+def create_dss_message_attributes(
+    package_id: str, submission_source: str, output_queue: str
+) -> dict[str, Any]:
     """Create attributes for a DSpace Submission Service message."""
     dss_message_attributes = {
         "PackageID": {"DataType": "String", "StringValue": package_id},
@@ -68,12 +85,12 @@ def create_dss_message_attributes(package_id, submission_source, output_queue):
 
 
 def create_dss_message_body(
-    submission_system,
-    collection_handle,
-    metadata_s3_uri,
-    bitstream_name,
-    bitstream_s3_uri,
-):
+    submission_system: str,
+    collection_handle: str,
+    metadata_s3_uri: str,
+    bitstream_name: str,
+    bitstream_s3_uri: str,
+) -> str:
     """Create body for a DSpace Submission Service message."""
     dss_message_body = {
         "SubmissionSystem": submission_system,

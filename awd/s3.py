@@ -1,6 +1,8 @@
 import logging
+from typing import Iterator
 
 from boto3 import client
+from mypy_boto3_s3.type_defs import PutObjectOutputTypeDef
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +11,12 @@ class S3:
     """An S3 class that provides a generic boto3 s3 client for interacting with S3
     objects, along with specific S3 functionality necessary for Wiley deposits."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = client("s3")
 
-    def filter_files_in_bucket(self, bucket, file_type, excluded_prefix):
+    def filter_files_in_bucket(
+        self, bucket: str, file_type: str, excluded_prefix: str
+    ) -> Iterator[str]:
         """Retrieve file with the specified file extension in the specified bucket without
         the excluded prefix."""
         paginator = self.client.get_paginator("list_objects_v2")
@@ -26,7 +30,9 @@ class S3:
         ]:
             yield object["Key"]
 
-    def archive_file_with_new_key(self, bucket, key, archived_key_prefix):
+    def archive_file_with_new_key(
+        self, bucket: str, key: str, archived_key_prefix: str
+    ) -> None:
         """Change the key of the specified file in the specified bucket to archive it from
         processing"""
         self.client.copy_object(
@@ -39,7 +45,7 @@ class S3:
             Key=key,
         )
 
-    def put_file(self, file, bucket, key):
+    def put_file(self, file: str, bucket: str, key: str) -> PutObjectOutputTypeDef:
         """Put a file in a specified S3 bucket with a specified key."""
         response = self.client.put_object(
             Body=file,
@@ -48,18 +54,3 @@ class S3:
         )
         logger.debug(f"{key} uploaded to S3")
         return response
-
-
-def create_files_dict(file_name, metadata_content, bitstream_content):
-    """Create dict of files to upload to S3."""
-    package_files = [
-        {
-            "file_name": f"{file_name}.json",
-            "file_content": metadata_content,
-        },
-        {
-            "file_name": f"{file_name}.pdf",
-            "file_content": bitstream_content,
-        },
-    ]
-    return package_files

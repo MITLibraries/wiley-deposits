@@ -70,10 +70,13 @@ coveralls: test
 
 
 ### Linting commands ###
-lint: black safety
+lint: black mypy safety
 
 black:
 	pipenv run black --check --diff .
+
+mypy:
+	pipenv run mypy awd
 
 safety:
 	pipenv check

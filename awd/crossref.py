@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any, Iterator
 
 import requests
 import smart_open
@@ -7,26 +8,26 @@ import smart_open
 logger = logging.getLogger(__name__)
 
 
-def get_dois_from_spreadsheet(file):
+def get_dois_from_spreadsheet(file: str) -> Iterator[str]:
     """Retriev DOIs from the Wiley-provided CSV file."""
     with smart_open.open(file, encoding="utf-8-sig") as csvfile:
         for doi in csvfile.read().splitlines():
             yield doi
 
 
-def get_work_record_from_doi(api_url, doi):
+def get_work_record_from_doi(api_url: str, doi: str) -> dict[str, Any]:
     """Retrieve Crossref works based on a DOI"""
-    crossref_work_record = requests.get(
+    work_record = requests.get(
         f"{api_url}{doi}",
         params={
             "mailto": "dspace-lib@mit.edu",
         },
         timeout=30,
     ).json()
-    return crossref_work_record
+    return work_record
 
 
-def get_metadata_extract_from(work):
+def get_metadata_extract_from(work_record: dict[str, Any]) -> dict[str, Any]:
     """Create metadata dict from a Crossref work JSON record."""
     keys_for_dspace = [
         "author",
@@ -43,8 +44,8 @@ def get_metadata_extract_from(work):
         "URL",
         "volume",
     ]
-    work = work["message"]
-    value_dict = {}
+    work = work_record["message"]
+    value_dict: dict[str, Any] = {}
     for key in [k for k in work.keys() if k in keys_for_dspace]:
         if key == "author":
             authors = []
@@ -62,10 +63,12 @@ def get_metadata_extract_from(work):
     return value_dict
 
 
-def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
+def create_dspace_metadata_from_dict(
+    value_dict: dict[str, Any], metadata_mapping_path: str
+) -> dict[str, Any]:
     """Create DSpace JSON metadata from metadata dict and a JSON metadata mapping file."""
-    with open(metadata_mapping_path, "r") as metadata_mapping:
-        metadata_mapping = json.load(metadata_mapping)
+    with open(metadata_mapping_path, "r") as metadata_mapping_file:
+        metadata_mapping = json.load(metadata_mapping_file)
         metadata = []
         for key in [k for k in metadata_mapping if k in value_dict.keys()]:
             if isinstance(value_dict[key], list):
@@ -78,7 +81,7 @@ def create_dspace_metadata_from_dict(value_dict, metadata_mapping_path):
         return {"metadata": metadata}
 
 
-def is_valid_dspace_metadata(dspace_metadata):
+def is_valid_dspace_metadata(dspace_metadata: dict[str, Any]) -> bool:
     """Validate that the metadata follows the format expected by DSpace."""
     approved_metadata_fields = [
         "dc.contributor.author",
@@ -108,12 +111,12 @@ def is_valid_dspace_metadata(dspace_metadata):
     return is_valid
 
 
-def is_valid_response(doi, crossref_work_record):
+def is_valid_response(doi: str, work_record: dict[str, Any]) -> bool:
     """Validate the Crossref work record contains sufficient metadata."""
     validation_status = False
     if (
-        crossref_work_record.get("message", {}).get("title") is not None
-        and crossref_work_record.get("message", {}).get("URL") is not None
+        work_record.get("message", {}).get("title") is not None
+        and work_record.get("message", {}).get("URL") is not None
     ):
         validation_status = True
         logger.debug(f"Sufficient metadata downloaded for {doi}")

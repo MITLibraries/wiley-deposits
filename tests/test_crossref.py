@@ -7,7 +7,7 @@ def test_get_dois_from_spreadsheet():
         assert doi == "10.1002/term.3131"
 
 
-def test_get_crossref_work_from_dois(mocked_web):
+def test_get_crossref_work_from_doi(mocked_web):
     doi = "10.1002/term.3131"
     work = crossref.get_work_record_from_doi("http://example.com/works/", doi)
     assert work["message"]["title"] == [
