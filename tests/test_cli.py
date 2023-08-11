@@ -1,9 +1,24 @@
+import json
 import logging
 
-from awd.cli import cli, doi_to_be_added, doi_to_be_retried
+from awd.cli import (
+    cli,
+    create_list_of_dspace_item_files,
+    doi_to_be_added,
+    doi_to_be_retried,
+)
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
+
+
+def test_create_list_of_dspace_item_files():
+    metadata_content = json.dumps({"key": "value"})
+    file_list = create_list_of_dspace_item_files("111.1-111", metadata_content, b"")
+    assert file_list == [
+        ("111.1-111.json", metadata_content),
+        ("111.1-111.pdf", b""),
+    ]
 
 
 def test_doi_to_be_added_true():

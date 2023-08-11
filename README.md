@@ -30,8 +30,6 @@ The available commands:
 
 `listen` - Retrieve messages from a DSpace Submission output queue and email the results to stakeholders.
 
-`check-permisions` - Confirm AWD infrastructure has deployed properly with correct permissions to all expected resources given the current env configuration.
-
 ## Crossref to Dublin Core metadata mapping
 Metadata is retrieved from the Crossref API and is mapped to Dublin Core according to this crosswalk:
 
