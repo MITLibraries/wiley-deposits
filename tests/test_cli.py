@@ -1,3 +1,4 @@
+import json
 import logging
 
 from awd.cli import (
@@ -12,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 def test_create_list_of_dspace_item_files():
-    file_list = create_list_of_dspace_item_files("111.1-111", {"key": "value"}, b"")
+    metadata_content = json.dumps({"key": "value"})
+    file_list = create_list_of_dspace_item_files("111.1-111", metadata_content, b"")
     assert file_list == [
-        ("111.1-111.json", {"key": "value"}),
+        ("111.1-111.json", metadata_content),
         ("111.1-111.pdf", b""),
     ]
 

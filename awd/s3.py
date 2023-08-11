@@ -45,7 +45,9 @@ class S3:
             Key=key,
         )
 
-    def put_file(self, file: str, bucket: str, key: str) -> PutObjectOutputTypeDef:
+    def put_file(
+        self, file: str | bytes, bucket: str, key: str
+    ) -> PutObjectOutputTypeDef:
         """Put a file in a specified S3 bucket with a specified key."""
         response = self.client.put_object(
             Body=file,

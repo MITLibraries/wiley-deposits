@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def create_list_of_dspace_item_files(
     file_name: str, metadata_content: str, bitstream_content: bytes
-) -> list[tuple[str, Any]]:
+) -> list[tuple[str, str | bytes]]:
     """Create a list of tuples containing metadata and bitstream file names and
     file content for a DSpace item."""
     return [
@@ -230,14 +230,13 @@ def deposit(
                 "/", "-"
             )  # 10.1002/term.3131 to 10.1002-term.3131
             try:
-                for file_tuple in create_list_of_dspace_item_files(
+                for file_name, file_contents in create_list_of_dspace_item_files(
                     doi_file_name, json.dumps(metadata), wiley_response.content
                 ):
-                    s3_client.put_file(file_tuple[1], bucket, file_tuple[0])
+                    s3_client.put_file(file_contents, bucket, file_name)
             except ClientError as e:
                 logger.error(
-                    f"Upload failed: {file_tuple[0]},"
-                    f"{e.response['Error']['Message']}"
+                    f"Upload failed: {file_name}," f"{e.response['Error']['Message']}"
                 )
                 continue
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
