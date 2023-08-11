@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class SES:
     """An SES class that provides a generic boto3 SES client."""
 
-    def __init__(self, region) -> None:
+    def __init__(self, region: str) -> None:
         self.client = client("ses", region_name=region)
 
     def create_email(
@@ -34,11 +34,10 @@ class SES:
         self, source_email: str, recipient_email_address: str, message: MIMEMultipart
     ) -> SendRawEmailResponseTypeDef:
         """Send email via SES."""
-        response = self.client.send_raw_email(
+        return self.client.send_raw_email(
             Source=source_email,
             Destinations=[recipient_email_address],
             RawMessage={
                 "Data": message.as_string(),
             },
         )
-        return response

@@ -10,21 +10,17 @@ def test_get_dois_from_spreadsheet():
 def test_get_crossref_work_from_doi(mocked_web):
     doi = "10.1002/term.3131"
     work = crossref.get_work_record_from_doi("http://example.com/works/", doi)
-    assert work["message"]["title"] == [
-        "Metal‐based nanoparticles for bone tissue engineering"
-    ]
+    assert work["message"]["title"] == ["Metal nanoparticles for bone tissue engineering"]
 
 
-def test_get_metadata_extract_from(
-    mocked_web, crossref_value_dict, crossref_work_record
-):
+def test_get_metadata_extract_from(mocked_web, crossref_value_dict, crossref_work_record):
     value_dict = crossref.get_metadata_extract_from(crossref_work_record)
     assert value_dict == crossref_value_dict
 
 
 def test_create_dspace_metadata_from_dict_minimum_metadata():
     value_dict = {
-        "title": "Metal‐based nanoparticles for bone tissue engineering",
+        "title": "Metal nanoparticles for bone tissue engineering",
         "URL": "http://dx.doi.org/10.1002/term.3131",
     }
     metadata = crossref.create_dspace_metadata_from_dict(
@@ -33,7 +29,7 @@ def test_create_dspace_metadata_from_dict_minimum_metadata():
     assert metadata["metadata"] == [
         {
             "key": "dc.title",
-            "value": "Metal‐based nanoparticles for bone tissue engineering",
+            "value": "Metal nanoparticles for bone tissue engineering",
         },
         {
             "key": "dc.relation.isversionof",

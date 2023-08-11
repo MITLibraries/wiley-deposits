@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 from typing import Any, Iterator
@@ -11,20 +13,18 @@ logger = logging.getLogger(__name__)
 def get_dois_from_spreadsheet(file: str) -> Iterator[str]:
     """Retriev DOIs from the Wiley-provided CSV file."""
     with smart_open.open(file, encoding="utf-8-sig") as csvfile:
-        for doi in csvfile.read().splitlines():
-            yield doi
+        yield from csvfile.read().splitlines()
 
 
 def get_work_record_from_doi(api_url: str, doi: str) -> dict[str, Any]:
-    """Retrieve Crossref works based on a DOI"""
-    work_record = requests.get(
+    """Retrieve Crossref works based on a DOI."""
+    return requests.get(
         f"{api_url}{doi}",
         params={
             "mailto": "dspace-lib@mit.edu",
         },
         timeout=30,
     ).json()
-    return work_record
 
 
 def get_metadata_extract_from(work_record: dict[str, Any]) -> dict[str, Any]:
@@ -46,7 +46,7 @@ def get_metadata_extract_from(work_record: dict[str, Any]) -> dict[str, Any]:
     ]
     work = work_record["message"]
     value_dict: dict[str, Any] = {}
-    for key in [k for k in work.keys() if k in keys_for_dspace]:
+    for key in [k for k in work if k in keys_for_dspace]:
         if key == "author":
             authors = []
             for author in work["author"]:
@@ -67,17 +67,19 @@ def create_dspace_metadata_from_dict(
     value_dict: dict[str, Any], metadata_mapping_path: str
 ) -> dict[str, Any]:
     """Create DSpace JSON metadata from metadata dict and a JSON metadata mapping file."""
-    with open(metadata_mapping_path, "r") as metadata_mapping_file:
+    with open(metadata_mapping_path) as metadata_mapping_file:
         metadata_mapping = json.load(metadata_mapping_file)
         metadata = []
-        for key in [k for k in metadata_mapping if k in value_dict.keys()]:
+        for key in [k for k in metadata_mapping if k in value_dict]:
             if isinstance(value_dict[key], list):
-                for list_item in value_dict[key]:
-                    metadata.append({"key": metadata_mapping[key], "value": list_item})
-            else:
-                metadata.append(
-                    {"key": metadata_mapping[key], "value": value_dict[key]}
+                metadata.extend(
+                    [
+                        {"key": metadata_mapping[key], "value": list_item}
+                        for list_item in value_dict[key]
+                    ]
                 )
+            else:
+                metadata.append({"key": metadata_mapping[key], "value": value_dict[key]})
         return {"metadata": metadata}
 
 
@@ -107,7 +109,7 @@ def is_valid_dspace_metadata(dspace_metadata: dict[str, Any]) -> bool:
                 is_valid = True
         logger.debug("Valid DSpace metadata generated")
     else:
-        logger.error(f"Invalid DSpace metadata generated: {dspace_metadata}")
+        logger.exception("Invalid DSpace metadata generated: %s ", dspace_metadata)
     return is_valid
 
 
@@ -119,7 +121,7 @@ def is_valid_response(doi: str, work_record: dict[str, Any]) -> bool:
         and work_record.get("message", {}).get("URL") is not None
     ):
         validation_status = True
-        logger.debug(f"Sufficient metadata downloaded for {doi}")
+        logger.debug("Sufficient metadata downloaded for %s", doi)
     else:
-        logger.error(f"Insufficient metadata for {doi}, missing title or URL")
+        logger.exception("Insufficient metadata for %s, missing title or URL", doi)
     return validation_status

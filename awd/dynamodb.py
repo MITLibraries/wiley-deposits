@@ -1,16 +1,19 @@
+from __future__ import annotations
+
+import datetime
 import logging
-from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
-from mypy_boto3_dynamodb.type_defs import PutItemOutputTypeDef
 
+from awd.config import DATE_FORMAT
 from awd.status import Status
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from mypy_boto3_dynamodb.type_defs import PutItemOutputTypeDef
 
-date_format = "%Y-%m-%d %H:%M:%S"
+logger = logging.getLogger(__name__)
 
 
 class DynamoDB:
@@ -22,9 +25,7 @@ class DynamoDB:
             region_name=region,
         )
 
-    def add_doi_item_to_database(
-        self, doi_table: str, doi: str
-    ) -> PutItemOutputTypeDef:
+    def add_doi_item_to_database(self, doi_table: str, doi: str) -> PutItemOutputTypeDef:
         """Add DOI item to database table."""
         response = self.client.put_item(
             TableName=doi_table,
@@ -32,10 +33,12 @@ class DynamoDB:
                 "doi": {"S": doi},
                 "status": {"S": str(Status.UNPROCESSED.value)},
                 "attempts": {"S": "0"},
-                "last_modified": {"S": datetime.now().strftime(date_format)},
+                "last_modified": {
+                    "S": datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
+                },
             },
         )
-        logger.debug(f"{doi} added to table")
+        logger.debug("%s added to table", doi)
         return response
 
     def retrieve_doi_items_from_database(self, doi_table: str) -> list[dict[str, Any]]:
@@ -46,9 +49,7 @@ class DynamoDB:
         doi_items = []
         for item in response["Items"]:
             deserializer = TypeDeserializer()
-            deserialized_item = {
-                k: deserializer.deserialize(v) for k, v in item.items()
-            }
+            deserialized_item = {k: deserializer.deserialize(v) for k, v in item.items()}
             doi_items.append(deserialized_item)
         return doi_items
 
@@ -73,11 +74,14 @@ class DynamoDB:
         )
         logger.debug("Response retrieved from DynamoDB table: %s", item)
         item["Item"]["attempts"]["S"] = str(int(item["Item"]["attempts"]["S"]) + 1)
-        item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
+        item["Item"]["last_modified"]["S"] = datetime.datetime.now(
+            tz=datetime.UTC
+        ).strftime(DATE_FORMAT)
         response = self.client.put_item(TableName=doi_table, Item=item["Item"])
         logger.debug(
-            f"{doi} attempts updated to: "
-            f'{str(int(item["Item"]["attempts"]["S"]) + 1)}'
+            "%s attempts updated to: %s",
+            doi,
+            str(int(item["Item"]["attempts"]["S"]) + 1),
         )
         return response
 
@@ -94,10 +98,12 @@ class DynamoDB:
         )
         logger.debug("Response retrieved from DynamoDB table: %s", item)
         item["Item"]["status"]["S"] = str(status_code)
-        item["Item"]["last_modified"]["S"] = datetime.now().strftime(date_format)
+        item["Item"]["last_modified"]["S"] = datetime.datetime.now(
+            tz=datetime.UTC
+        ).strftime(DATE_FORMAT)
         response = self.client.put_item(
             TableName=doi_table,
             Item=item["Item"],
         )
-        logger.debug(f"{doi} status updated to: {status_code}")
+        logger.debug("%s status updated to: %s", doi, status_code)
         return response

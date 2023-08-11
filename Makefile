@@ -70,7 +70,7 @@ coveralls: test
 
 
 ### Linting commands ###
-lint: black mypy safety
+lint: black mypy ruff safety 
 
 black:
 	pipenv run black --check --diff .
@@ -78,12 +78,18 @@ black:
 mypy:
 	pipenv run mypy awd
 
+ruff:
+	pipenv run ruff check .
+
 safety:
 	pipenv check
 	pipenv verify
 
 # Apply changes to resolve any linting errors
-lint-apply: black-apply
+lint-apply: black-apply ruff-apply
 
 black-apply: 
 	pipenv run black .
+
+ruff-apply: 
+	pipenv run ruff check --fix .

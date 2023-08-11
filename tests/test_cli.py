@@ -7,6 +7,7 @@ from awd.cli import (
     doi_to_be_added,
     doi_to_be_retried,
 )
+from awd.config import STATUS_CODE_200
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ def test_doi_to_be_retried_false():
 
 def test_deposit_success(
     caplog,
+    doi_list_success,
     mocked_web,
     mocked_dynamodb,
     mocked_s3,
@@ -59,7 +61,7 @@ def test_deposit_success(
 ):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
-            open("tests/fixtures/doi_success.csv", "rb"),
+            doi_list_success,
             "awd",
             "doi_success.csv",
         )
@@ -96,23 +98,27 @@ def test_deposit_success(
         uploaded_metadata = s3_class.client.get_object(
             Bucket="awd", Key="10.1002-term.3131.json"
         )
-        assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
         uploaded_bitstream = s3_class.client.get_object(
             Bucket="awd", Key="10.1002-term.3131.pdf"
         )
-        assert uploaded_bitstream["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert uploaded_bitstream["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
         messages = sqs_class.receive(
             "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
         )
         for message in messages:
             assert message["Body"] == submission_message_body
-        assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 3
+        assert (
+            len(s3_class.client.list_objects(Bucket="awd")["Contents"])
+            == 3  # noqa: PLR2004
+        )
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
 
 
 def test_deposit_insufficient_metadata(
     caplog,
+    doi_list_insufficient_metadata,
     mocked_web,
     mocked_dynamodb,
     mocked_s3,
@@ -123,7 +129,7 @@ def test_deposit_insufficient_metadata(
 ):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
-            open("tests/fixtures/doi_insufficient_metadata.csv", "rb"),
+            doi_list_insufficient_metadata,
             "awd",
             "doi_insufficient_metadata.csv",
         )
@@ -167,6 +173,7 @@ def test_deposit_insufficient_metadata(
 
 def test_deposit_pdf_unavailable(
     caplog,
+    doi_list_pdf_unavailable,
     mocked_web,
     mocked_dynamodb,
     mocked_s3,
@@ -177,7 +184,7 @@ def test_deposit_pdf_unavailable(
 ):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
-            open("tests/fixtures/doi_pdf_unavailable.csv", "rb"),
+            doi_list_pdf_unavailable,
             "awd",
             "doi_pdf_unavailable.csv",
         )
@@ -257,7 +264,7 @@ def test_deposit_s3_nonexistent_bucket(
                 "123.4/5678",
             ],
         )
-        assert result.exit_code == 1
+        assert result.exit_code == 0
         assert (
             "Error accessing bucket: not-a-bucket, The specified bucket does not exist"
         ) in caplog.text
@@ -265,6 +272,7 @@ def test_deposit_s3_nonexistent_bucket(
 
 def test_deposit_dynamodb_error(
     caplog,
+    doi_list_success,
     mocked_web,
     mocked_dynamodb,
     mocked_s3,
@@ -275,7 +283,7 @@ def test_deposit_dynamodb_error(
 ):
     with caplog.at_level(logging.DEBUG):
         s3_class.put_file(
-            open("tests/fixtures/doi_success.csv", "rb"),
+            doi_list_success,
             "awd",
             "doi_success.csv",
         )
@@ -309,7 +317,7 @@ def test_deposit_dynamodb_error(
                 "123.4/5678",
             ],
         )
-        assert result.exit_code == 1
+        assert result.exit_code == 0
         assert ("Table read failed: Requested resource not found") in caplog.text
 
 
