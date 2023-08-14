@@ -1,8 +1,9 @@
+from http import HTTPStatus
+
 import pytest
 from botocore.exceptions import ClientError
 
 from awd import sqs
-from awd.config import STATUS_CODE_200
 
 
 def test_sqs_delete_success(
@@ -24,7 +25,7 @@ def test_sqs_delete_success(
     response = sqs_class.delete(
         "https://queue.amazonaws.com/123456789012/", "mock-output-queue", receipt_handle
     )
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
 def test_sqs_delete_failure(mocked_sqs, sqs_class):
@@ -70,7 +71,7 @@ def test_sqs_send_success(
         submission_message_attributes,
         submission_message_body,
     )
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
 def test_sqs_send_failure(

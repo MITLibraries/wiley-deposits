@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 import datetime
 import io
 import json
 import logging
-import sys
 from typing import Any
 
 import click
@@ -48,11 +45,11 @@ def doi_to_be_added(doi: str, doi_items: list[dict[str, Any]]) -> bool:
 def doi_to_be_retried(doi: str, doi_items: list[dict[str, Any]]) -> bool:
     """Validate that a DOI should be retried based on its status in the database table."""
     validation_status = False
-    for _doi_item in [
+    if any(
         d
         for d in doi_items
         if d["doi"] == doi and d["status"] == str(Status.UNPROCESSED.value)
-    ]:
+    ):
         validation_status = True
         logger.debug("%s will be retried", doi)
     return validation_status
@@ -187,7 +184,7 @@ def deposit(
         logger.exception(
             "Error accessing bucket: %s, %s", bucket, e.response["Error"]["Message"]
         )
-        sys.exit()
+        return
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
         try:
@@ -196,7 +193,7 @@ def deposit(
             )
         except ClientError as e:
             logger.exception("Table read failed: %s", e.response["Error"]["Message"])
-            sys.exit()
+            return
         for doi in dois:
             if doi_to_be_added(doi, doi_items):
                 try:
@@ -221,10 +218,10 @@ def deposit(
                     doi,
                     e.response["Error"]["Message"],
                 )
-            crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
-            if crossref.is_valid_response(doi, crossref_work_record) is False:
+            crossref_response = crossref.get_response_from_doi(metadata_url, doi)
+            if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
-            value_dict = crossref.get_metadata_extract_from(crossref_work_record)
+            value_dict = crossref.get_metadata_extract_from(crossref_response.json())
             metadata = crossref.create_dspace_metadata_from_dict(
                 value_dict, "config/metadata_mapping.json"
             )

@@ -15,6 +15,7 @@ repos:
         language: system
         pass_filenames: true
         types: ["python"]
+        exclude: "tests/"
       - id: ruff-apply
         name: ruff-apply
         entry: pipenv run ruff check --fix

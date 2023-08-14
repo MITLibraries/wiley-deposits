@@ -157,7 +157,7 @@ def mocked_web(crossref_work_record, wiley_pdf):
         )
         m.get(
             "http://example.com/works/10.1002/nome.tadata?mailto=dspace-lib@mit.edu",
-            json={},
+            json={"data": "string"},
         )
         yield m
 

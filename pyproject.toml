@@ -12,6 +12,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 select = ["ALL", "PT"]
+target-version = "py311"
 
 ignore = [
     # default

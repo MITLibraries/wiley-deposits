@@ -1,6 +1,5 @@
 from email.mime.multipart import MIMEMultipart
-
-from awd.config import STATUS_CODE_200
+from http import HTTPStatus
 
 
 def test_ses_create_email(ses_class):
@@ -20,4 +19,4 @@ def test_ses_send_email(mocked_ses, ses_class):
         "test@example.com",
         message,
     )
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK

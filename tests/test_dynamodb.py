@@ -1,10 +1,11 @@
-from awd.config import STATUS_CODE_200
+from http import HTTPStatus
+
 from awd.status import Status
 
 
 def test_dynamodb_add_doi_item_to_database(mocked_dynamodb, dynamodb_class):
     add_response = dynamodb_class.add_doi_item_to_database("test_dois", "222.2/2222")
-    assert add_response["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+    assert add_response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
 def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_class):
@@ -77,7 +78,7 @@ def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb
     update_response = dynamodb_class.update_doi_item_attempts_in_database(
         "test_dois", "111.1/1111"
     )
-    assert update_response["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+    assert update_response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
     updated_item = dynamodb_class.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
@@ -109,7 +110,7 @@ def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_c
     update_response = dynamodb_class.update_doi_item_status_in_database(
         "test_dois", "111.1/1111", Status.MESSAGE_SENT.value
     )
-    assert update_response["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+    assert update_response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
     updated_item = dynamodb_class.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},

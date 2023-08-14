@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 from boto3 import client
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from mypy_boto3_s3.type_defs import PutObjectOutputTypeDef
 
 logger = logging.getLogger(__name__)

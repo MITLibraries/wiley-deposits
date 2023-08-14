@@ -1,5 +1,6 @@
 import json
 import logging
+from http import HTTPStatus
 
 from awd.cli import (
     cli,
@@ -7,7 +8,6 @@ from awd.cli import (
     doi_to_be_added,
     doi_to_be_retried,
 )
-from awd.config import STATUS_CODE_200
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
@@ -98,11 +98,9 @@ def test_deposit_success(
         uploaded_metadata = s3_class.client.get_object(
             Bucket="awd", Key="10.1002-term.3131.json"
         )
-        assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
-        uploaded_bitstream = s3_class.client.get_object(
-            Bucket="awd", Key="10.1002-term.3131.pdf"
-        )
-        assert uploaded_bitstream["ResponseMetadata"]["HTTPStatusCode"] == STATUS_CODE_200
+        assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
+        s3_class.client.get_object(Bucket="awd", Key="10.1002-term.3131.pdf")
+        assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
         messages = sqs_class.receive(
             "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
         )

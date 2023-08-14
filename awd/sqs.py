@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 from boto3 import client
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
     from mypy_boto3_sqs.type_defs import (
         EmptyResponseMetadataTypeDef,
         MessageAttributeValueTypeDef,

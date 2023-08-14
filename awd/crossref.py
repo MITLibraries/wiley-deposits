@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import json
 import logging
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import requests
 import smart_open
@@ -16,15 +15,18 @@ def get_dois_from_spreadsheet(file: str) -> Iterator[str]:
         yield from csvfile.read().splitlines()
 
 
-def get_work_record_from_doi(api_url: str, doi: str) -> dict[str, Any]:
+def get_response_from_doi(url: str, doi: str) -> requests.Response:
     """Retrieve Crossref works based on a DOI."""
-    return requests.get(
-        f"{api_url}{doi}",
+    logger.debug("Requesting metadata for %s%s", url, doi)
+    response = requests.get(
+        f"{url}{doi}",
         params={
             "mailto": "dspace-lib@mit.edu",
         },
         timeout=30,
-    ).json()
+    )
+    logger.debug("Response code retrieved from Crossref for %s: %s", doi, response)
+    return response
 
 
 def get_metadata_extract_from(work_record: dict[str, Any]) -> dict[str, Any]:
@@ -113,15 +115,18 @@ def is_valid_dspace_metadata(dspace_metadata: dict[str, Any]) -> bool:
     return is_valid
 
 
-def is_valid_response(doi: str, work_record: dict[str, Any]) -> bool:
+def is_valid_response(doi: str, crossref_response: requests.Response) -> bool:
     """Validate the Crossref work record contains sufficient metadata."""
     validation_status = False
-    if (
-        work_record.get("message", {}).get("title") is not None
-        and work_record.get("message", {}).get("URL") is not None
-    ):
-        validation_status = True
-        logger.debug("Sufficient metadata downloaded for %s", doi)
+    if work_record := crossref_response.json():
+        if (
+            work_record.get("message", {}).get("title") is not None
+            and work_record.get("message", {}).get("URL") is not None
+        ):
+            validation_status = True
+            logger.debug("Sufficient metadata downloaded for %s", doi)
+        else:
+            logger.exception("Insufficient metadata for %s, missing title or URL", doi)
     else:
-        logger.exception("Insufficient metadata for %s, missing title or URL", doi)
+        logger.exception("Unable to parse %s response as JSON", doi)
     return validation_status

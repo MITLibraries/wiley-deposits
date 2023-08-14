@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import os
 
@@ -10,7 +8,6 @@ logger.debug("Configuring awd for current env: %s", ENV)
 
 AWS_REGION_NAME = "us-east-1"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-STATUS_CODE_200 = 200
 
 if ENV == "test":
     LOG_LEVEL: str | None = "INFO"
