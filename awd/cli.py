@@ -1,7 +1,7 @@
+import datetime
 import io
 import json
 import logging
-from datetime import datetime
 from typing import Any
 
 import click
@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 def create_list_of_dspace_item_files(
     file_name: str, metadata_content: str, bitstream_content: bytes
 ) -> list[tuple[str, str | bytes]]:
-    """Create a list of tuples containing metadata and bitstream file names and
-    file content for a DSpace item."""
+    """Create a list of metadata and content tuples for a DSpace item."""
     return [
         (
             f"{file_name}.json",
@@ -35,24 +34,24 @@ def create_list_of_dspace_item_files(
 
 
 def doi_to_be_added(doi: str, doi_items: list[dict[str, Any]]) -> bool:
-    "Validate that a DOI is not a part of the database table and needs to  be added."
+    """Validate that a DOI is not a part of the database table and needs to  be added."""
     validation_status = False
     if not any(doi_item["doi"] == doi for doi_item in doi_items):
         validation_status = True
-        logger.debug(f"{doi} added to database.")
+        logger.debug("%s added to database", doi)
     return validation_status
 
 
 def doi_to_be_retried(doi: str, doi_items: list[dict[str, Any]]) -> bool:
-    "Validate that a DOI should be retried based on its status in the database table."
+    """Validate that a DOI should be retried based on its status in the database table."""
     validation_status = False
-    for doi_item in [
+    if any(
         d
         for d in doi_items
         if d["doi"] == doi and d["status"] == str(Status.UNPROCESSED.value)
-    ]:
+    ):
         validation_status = True
-        logger.debug(f"{doi} will be retried.")
+        logger.debug("%s will be retried", doi)
     return validation_status
 
 
@@ -169,10 +168,11 @@ def deposit(
     sqs_input_queue: str,
     collection_handle: str,
 ) -> None:
-    """Process a text file of DOIs to retrieve and send metadata and PDFs as SQS messages
-    to the DSpace Submission Service. Errors generated during the process are emailed
-    to stakeholders."""
-    date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
+    """Process a text file of DOIs to retrieve metadata and PDFs and send to SQS queue.
+
+    Errors generated during the process are emailed to stakeholders.
+    """
+    date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
     s3_client = s3.S3()
     sqs_client = sqs.SQS(ctx.obj["aws_region"])
@@ -181,10 +181,10 @@ def deposit(
     try:
         s3_client.client.list_objects_v2(Bucket=bucket)
     except ClientError as e:
-        logger.error(
-            f"Error accessing bucket: {bucket}, {e.response['Error']['Message']}"
+        logger.exception(
+            "Error accessing bucket: %s, %s", bucket, e.response["Error"]["Message"]
         )
-        exit
+        return
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
         try:
@@ -192,15 +192,17 @@ def deposit(
                 ctx.obj["doi_table"]
             )
         except ClientError as e:
-            logger.error(f"Table read failed: {e.response['Error']['Message']}")
-            exit
+            logger.exception("Table read failed: %s", e.response["Error"]["Message"])
+            return
         for doi in dois:
             if doi_to_be_added(doi, doi_items):
                 try:
                     dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
                 except ClientError as e:
-                    logger.error(
-                        f"Table error while processing {doi}: {e.response['Error']['Message']}"
+                    logger.exception(
+                        "Table error while processing %s: %s",
+                        doi,
+                        e.response["Error"]["Message"],
                     )
             elif doi_to_be_retried(doi, doi_items) is False:
                 continue
@@ -208,16 +210,18 @@ def deposit(
                 dynamodb_client.update_doi_item_attempts_in_database(
                     ctx.obj["doi_table"], doi
                 )
-            except KeyError as e:
-                logger.error("Key error in table while processing %s: %s", doi, e)
+            except KeyError:
+                logger.exception("Key error in table while processing %s", doi)
             except ClientError as e:
-                logger.error(
-                    f"Table error while processing {doi}: {e.response['Error']['Message']}"
+                logger.exception(
+                    "Table error while processing %s: %s",
+                    doi,
+                    e.response["Error"]["Message"],
                 )
-            crossref_work_record = crossref.get_work_record_from_doi(metadata_url, doi)
-            if crossref.is_valid_response(doi, crossref_work_record) is False:
+            crossref_response = crossref.get_response_from_doi(metadata_url, doi)
+            if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
-            value_dict = crossref.get_metadata_extract_from(crossref_work_record)
+            value_dict = crossref.get_metadata_extract_from(crossref_response.json())
             metadata = crossref.create_dspace_metadata_from_dict(
                 value_dict, "config/metadata_mapping.json"
             )
@@ -235,8 +239,8 @@ def deposit(
                 ):
                     s3_client.put_file(file_contents, bucket, file_name)
             except ClientError as e:
-                logger.error(
-                    f"Upload failed: {file_name}," f"{e.response['Error']['Message']}"
+                logger.exception(
+                    "Upload failed for  %s: %s", file_name, e.response["Error"]["Message"]
                 )
                 continue
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
@@ -261,11 +265,13 @@ def deposit(
                 dynamodb_client.update_doi_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.MESSAGE_SENT.value
                 )
-            except KeyError as e:
-                logger.error("Key error in table while processing %s: %s", doi, e)
+            except KeyError:
+                logger.exception("Key error in table while processing %s", doi)
             except ClientError as e:
-                logger.error(
-                    f"Table error while processing {doi}: {e.response['Error']['Message']}"
+                logger.exception(
+                    "Table error while processing %s: %s",
+                    doi,
+                    e.response["Error"]["Message"],
                 )
         s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
@@ -282,9 +288,9 @@ def deposit(
             ctx.obj["log_recipient_email"],
             email_message,
         )
-        logger.debug(f"Logs sent to {ctx.obj['log_recipient_email']}")
+        logger.debug("Logs sent to %s", ctx.obj["log_recipient_email"])
     except ClientError as e:
-        logger.error(f"Failed to send logs: {e.response['Error']['Message']}")
+        logger.exception("Failed to send logs: %s", e.response["Error"]["Message"])
 
 
 @cli.command()
@@ -299,9 +305,8 @@ def listen(
     ctx: click.Context,
     retry_threshold: int,
 ) -> None:
-    """Retrieve messages from a DSpace Submission output queue and email the
-    results to stakeholders."""
-    date = datetime.today().strftime("%m-%d-%Y %H:%M:%S")
+    """Retrieve messages from an SQS queue and email the results to stakeholders."""
+    date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
     sqs = SQS(ctx.obj["aws_region"])
     dynamodb_client = DynamoDB(ctx.obj["aws_region"])
@@ -312,17 +317,17 @@ def listen(
             try:
                 doi = sqs_message["MessageAttributes"]["PackageID"]["StringValue"]
             except KeyError:
-                logger.error(
+                logger.exception(
                     "Failed to get DOI from message attributes: %s", sqs_message
                 )
                 continue
             try:
                 body = json.loads(str(sqs_message.get("Body")))
             except ValueError:
-                logger.error(f"Failed to parse body of SQS message: {sqs_message}")
+                logger.exception("Failed to parse body of SQS message: %s", sqs_message)
                 continue
             if body["ResultType"] == "error":
-                logger.error(f"DOI: {doi}, Result: {body}")
+                logger.exception("DOI: %s, Result: %s", doi, body)
                 sqs.delete(
                     ctx.obj["sqs_base_url"],
                     ctx.obj["sqs_output_queue"],
@@ -339,14 +344,19 @@ def listen(
                         dynamodb_client.update_doi_item_status_in_database(
                             ctx.obj["doi_table"], doi, Status.UNPROCESSED.value
                         )
-                except KeyError as e:
-                    logger.error("Key error in table while processing %s: %s", doi, e)
+                except KeyError:
+                    logger.exception(
+                        "Key error in table while processing %s",
+                        doi,
+                    )
                 except ClientError as e:
-                    logger.error(
-                        f"Table error while processing {doi}: {e.response['Error']['Message']}"
+                    logger.exception(
+                        "Table error while processing %s: %s",
+                        doi,
+                        e.response["Error"]["Message"],
                     )
             else:
-                logger.info(f"DOI: {doi}, Result: {body}")
+                logger.info("DOI: %s, Result: %s", doi, body)
                 sqs.delete(
                     ctx.obj["sqs_base_url"],
                     ctx.obj["sqs_output_queue"],
@@ -356,16 +366,21 @@ def listen(
                     dynamodb_client.update_doi_item_status_in_database(
                         ctx.obj["doi_table"], doi, Status.SUCCESS.value
                     )
-                except KeyError as e:
-                    logger.error("Key error in table while processing %s: %s", doi, e)
+                except KeyError:
+                    logger.exception(
+                        "Key error in table while processing %s",
+                        doi,
+                    )
                 except ClientError as e:
-                    logger.error(
-                        f"Table error while processing {doi}: {e.response['Error']['Message']}"
+                    logger.exception(
+                        "Table error while processing %s: %s",
+                        doi,
+                        e.response["Error"]["Message"],
                     )
         logger.debug("Messages received and deleted from output queue")
     except ClientError as e:
-        logger.error(
-            f"Failure while retrieving SQS messages, {e.response['Error']['Message']}"
+        logger.exception(
+            "Failure while retrieving SQS messages: %s", e.response["Error"]["Message"]
         )
     ses_client = SES(ctx.obj["aws_region"])
     email_message = ses_client.create_email(
@@ -379,6 +394,6 @@ def listen(
             ctx.obj["log_recipient_email"],
             email_message,
         )
-        logger.debug(f"Logs sent to {ctx.obj['log_recipient_email']}")
+        logger.debug("Logs sent to %s", ctx.obj["log_recipient_email"])
     except ClientError as e:
-        logger.error(f"Failed to send logs: {e.response['Error']['Message']}")
+        logger.exception("Failed to send logs: %s", e.response["Error"]["Message"])

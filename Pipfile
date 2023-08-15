@@ -20,6 +20,7 @@ pytest-cov = "*"
 requests-mock = "*"
 ruff = "*"
 types-requests = "*"
+pre-commit = "*"
 
 [requires]
 python_version = "3.11"

@@ -54,6 +54,7 @@ run-listen-dev: ## Run the dev listen command
 ### Dependency commands ###
 install: ## Install script and dependencies
 	pipenv install --dev
+	pipenv run pre-commit install
 
 update: install ## Update all Python dependencies
 	pipenv clean
@@ -70,20 +71,26 @@ coveralls: test
 
 
 ### Linting commands ###
-lint: black mypy safety
+lint: black mypy ruff safety 
 
 black:
 	pipenv run black --check --diff .
 
 mypy:
-	pipenv run mypy awd
+	pipenv run mypy .
+
+ruff:
+	pipenv run ruff check .
 
 safety:
 	pipenv check
 	pipenv verify
 
 # Apply changes to resolve any linting errors
-lint-apply: black-apply
+lint-apply: black-apply ruff-apply
 
 black-apply: 
 	pipenv run black .
+
+ruff-apply: 
+	pipenv run ruff check --fix .

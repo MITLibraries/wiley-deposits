@@ -23,9 +23,9 @@ def is_valid_response(doi: str, wiley_response: requests.Response) -> bool:
     validation_status = False
     if wiley_response.headers["content-type"] == "application/pdf; charset=UTF-8":
         validation_status = True
-        logger.debug(f"PDF downloaded for {doi}")
+        logger.debug("PDF downloaded for %s", doi)
     else:
-        logger.error(f"A PDF could not be retrieved for DOI: {doi}")
+        logger.exception("A PDF could not be retrieved for DOI: %s", doi)
         logger.debug(
             "Response contents retrieved from Wiley server for %s: %s",
             doi,

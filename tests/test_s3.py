@@ -1,7 +1,7 @@
+from http import HTTPStatus
+
 import pytest
 from botocore.exceptions import ClientError
-
-from awd import s3
 
 
 def test_s3_filter_files_in_bucket_with_matching_csv(mocked_s3, s3_class):
@@ -44,7 +44,7 @@ def test_archive_file_in_bucket(mocked_s3, s3_class):
         " specified key does not exist." in str(e.value)
     )
     response = s3_class.client.get_object(Bucket="awd", Key="archived/test.csv")
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
 def test_s3_put_file(mocked_s3, s3_class):
@@ -55,6 +55,4 @@ def test_s3_put_file(mocked_s3, s3_class):
         "test.json",
     )
     assert len(s3_class.client.list_objects(Bucket="awd")["Contents"]) == 1
-    assert (
-        s3_class.client.list_objects(Bucket="awd")["Contents"][0]["Key"] == "test.json"
-    )
+    assert s3_class.client.list_objects(Bucket="awd")["Contents"][0]["Key"] == "test.json"

@@ -1,4 +1,5 @@
 from email.mime.multipart import MIMEMultipart
+from http import HTTPStatus
 
 
 def test_ses_create_email(ses_class):
@@ -18,4 +19,4 @@ def test_ses_send_email(mocked_ses, ses_class):
         "test@example.com",
         message,
     )
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
