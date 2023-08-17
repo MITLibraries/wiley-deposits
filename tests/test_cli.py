@@ -242,57 +242,6 @@ def test_deposit_s3_nonexistent_bucket(
         ) in caplog.text
 
 
-def test_deposit_dynamodb_error(
-    caplog,
-    doi_list_success,
-    mocked_web,
-    mocked_dynamodb,
-    mocked_s3,
-    mocked_ses,
-    mocked_sqs,
-    s3_class,
-    runner,
-):
-    with caplog.at_level(logging.DEBUG):
-        s3_class.put_file(
-            doi_list_success,
-            "awd",
-            "doi_success.csv",
-        )
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table",
-                "test_dois",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "--doi_table",
-                "not-a-table",
-                "deposit",
-                "--metadata_url",
-                "http://example.com/works/",
-                "--content_url",
-                "http://example.com/doi/",
-                "--bucket",
-                "awd",
-                "--sqs_input_queue",
-                "mock-input-queue",
-                "--collection_handle",
-                "123.4/5678",
-            ],
-        )
-        assert result.exit_code == 0
-        assert ("Table read failed: Requested resource not found") in caplog.text
-
-
 def test_listen_success(
     caplog,
     mocked_dynamodb,

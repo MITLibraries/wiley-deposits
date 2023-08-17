@@ -165,38 +165,18 @@ def deposit(
         return
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
-        try:
-            database_items = dynamodb_client.retrieve_doi_items_from_database(
-                ctx.obj["doi_table"]
-            )
-        except ClientError as e:
-            logger.exception("Table read failed: %s", e.response["Error"]["Message"])
+        database_items = dynamodb_client.retrieve_items_from_database(
+            ctx.obj["doi_table"]
+        )
+        if not isinstance(database_items, list):
             return
         for doi in dois:
             article = Article(doi)
             if article.doi_to_be_added(database_items):
-                try:
-                    dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
-                except ClientError as e:
-                    logger.exception(
-                        "Table error while processing %s: %s",
-                        doi,
-                        e.response["Error"]["Message"],
-                    )
+                dynamodb_client.add_item_to_database(ctx.obj["doi_table"], article.doi)
             elif article.doi_to_be_retried(database_items) is False:
                 continue
-            try:
-                dynamodb_client.update_doi_item_attempts_in_database(
-                    ctx.obj["doi_table"], doi
-                )
-            except KeyError:
-                logger.exception("Key error in table while processing %s", doi)
-            except ClientError as e:
-                logger.exception(
-                    "Table error while processing %s: %s",
-                    doi,
-                    e.response["Error"]["Message"],
-                )
+            dynamodb_client.update_item_attempts_in_database(ctx.obj["doi_table"], doi)
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
@@ -246,7 +226,7 @@ def deposit(
                 dss_message_body,
             )
             try:
-                dynamodb_client.update_doi_item_status_in_database(
+                dynamodb_client.update_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.MESSAGE_SENT.value
                 )
             except KeyError:
@@ -321,11 +301,11 @@ def listen(
                     if dynamodb_client.attempts_exceeded(
                         ctx.obj["doi_table"], doi, retry_threshold
                     ):
-                        dynamodb_client.update_doi_item_status_in_database(
+                        dynamodb_client.update_item_status_in_database(
                             ctx.obj["doi_table"], doi, Status.FAILED.value
                         )
                     else:
-                        dynamodb_client.update_doi_item_status_in_database(
+                        dynamodb_client.update_item_status_in_database(
                             ctx.obj["doi_table"], doi, Status.UNPROCESSED.value
                         )
                 except KeyError:
@@ -347,7 +327,7 @@ def listen(
                     sqs_message["ReceiptHandle"],
                 )
                 try:
-                    dynamodb_client.update_doi_item_status_in_database(
+                    dynamodb_client.update_item_status_in_database(
                         ctx.obj["doi_table"], doi, Status.SUCCESS.value
                     )
                 except KeyError:
