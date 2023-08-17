@@ -8,6 +8,7 @@ from click.testing import CliRunner
 from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 
 from awd import config
+from awd.article import Article
 from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.ses import SES
@@ -60,6 +61,11 @@ def test_aws_user():
             PolicyDocument=json.dumps(policy_document),
         )
         yield client.create_access_key(UserName="test-user")["AccessKey"]
+
+
+@pytest.fixture
+def article_class():
+    return Article(doi="111.1/1111")
 
 
 @pytest.fixture

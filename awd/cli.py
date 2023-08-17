@@ -2,13 +2,13 @@ import datetime
 import io
 import json
 import logging
-from typing import Any
 
 import click
 import sentry_sdk
 from botocore.exceptions import ClientError
 
 from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
+from awd.article import Article
 from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
@@ -31,28 +31,6 @@ def create_list_of_dspace_item_files(
             bitstream_content,
         ),
     ]
-
-
-def doi_to_be_added(doi: str, doi_items: list[dict[str, Any]]) -> bool:
-    """Validate that a DOI is not a part of the database table and needs to  be added."""
-    validation_status = False
-    if not any(doi_item["doi"] == doi for doi_item in doi_items):
-        validation_status = True
-        logger.debug("%s added to database", doi)
-    return validation_status
-
-
-def doi_to_be_retried(doi: str, doi_items: list[dict[str, Any]]) -> bool:
-    """Validate that a DOI should be retried based on its status in the database table."""
-    validation_status = False
-    if any(
-        d
-        for d in doi_items
-        if d["doi"] == doi and d["status"] == str(Status.UNPROCESSED.value)
-    ):
-        validation_status = True
-        logger.debug("%s will be retried", doi)
-    return validation_status
 
 
 @click.group()
@@ -188,14 +166,15 @@ def deposit(
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
         try:
-            doi_items = dynamodb_client.retrieve_doi_items_from_database(
+            database_items = dynamodb_client.retrieve_doi_items_from_database(
                 ctx.obj["doi_table"]
             )
         except ClientError as e:
             logger.exception("Table read failed: %s", e.response["Error"]["Message"])
             return
         for doi in dois:
-            if doi_to_be_added(doi, doi_items):
+            article = Article(doi)
+            if article.doi_to_be_added(database_items):
                 try:
                     dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
                 except ClientError as e:
@@ -204,7 +183,7 @@ def deposit(
                         doi,
                         e.response["Error"]["Message"],
                     )
-            elif doi_to_be_retried(doi, doi_items) is False:
+            elif article.doi_to_be_retried(database_items) is False:
                 continue
             try:
                 dynamodb_client.update_doi_item_attempts_in_database(
@@ -221,11 +200,14 @@ def deposit(
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
-            value_dict = crossref.get_metadata_extract_from(crossref_response.json())
-            metadata = crossref.create_dspace_metadata_from_dict(
-                value_dict, "config/metadata_mapping.json"
+            article.source_metadata = crossref.get_metadata_extract_from(
+                crossref_response.json()
             )
-            if crossref.is_valid_dspace_metadata(metadata) is False:
+            article.transformed_metadata = crossref.create_dspace_metadata_from_dict(
+                article.source_metadata,
+                "config/metadata_mapping.json",
+            )
+            if crossref.is_valid_dspace_metadata(article.transformed_metadata) is False:
                 continue
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
@@ -235,7 +217,9 @@ def deposit(
             )  # 10.1002/term.3131 to 10.1002-term.3131
             try:
                 for file_name, file_contents in create_list_of_dspace_item_files(
-                    doi_file_name, json.dumps(metadata), wiley_response.content
+                    doi_file_name,
+                    json.dumps(article.transformed_metadata),
+                    wiley_response.content,
                 ):
                     s3_client.put_file(file_contents, bucket, file_name)
             except ClientError as e:
