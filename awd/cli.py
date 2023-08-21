@@ -158,7 +158,8 @@ def deposit(
             return  # Unable to read DynamoDB table, exit
         for doi in dois:
             article = Article(doi)
-            if article.to_be_added_to_database(database_items):
+            # check status of DOI in extracted database items, adding/updating as needed
+            if article.exists_in_database(database_items):
                 try:
                     dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
                 except ClientError as e:
@@ -167,7 +168,7 @@ def deposit(
                         doi,
                         e.response["Error"]["Message"],
                     )
-            elif article.to_be_retried(database_items) is False:
+            elif article.has_retry_status(database_items) is False:
                 continue
             try:
                 dynamodb_client.update_doi_item_attempts_in_database(
@@ -181,18 +182,21 @@ def deposit(
                     doi,
                     e.response["Error"]["Message"],
                 )
+            # Retrieve and validate Crossref metadata
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
             article.crossref_metadata = crossref.get_metadata_extract_from(
                 crossref_response.json()
             )
+            # Create and validate DSpace metadata from Crossref metadata
             article.dspace_metadata = crossref.create_dspace_metadata_from_dict(
                 article.crossref_metadata,
                 "config/metadata_mapping.json",
             )
             if crossref.is_valid_dspace_metadata(article.dspace_metadata) is False:
                 continue
+            # Retrieve and validate PDF from Wiley server
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
                 continue
@@ -200,6 +204,7 @@ def deposit(
             doi_file_name = doi.replace(
                 "/", "-"
             )  # 10.1002/term.3131 to 10.1002-term.3131
+            # Upload DSpace metadata and PDF to S3 bucket
             try:
                 s3_client.put_file(
                     json.dumps(article.dspace_metadata), bucket, f"{doi_file_name}.json"
@@ -214,6 +219,7 @@ def deposit(
                     e.response["Error"]["Message"],
                 )
                 continue
+            # Send message to SQS queue for processing by dspace-submission-service
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
             metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
             dss_message_attributes = sqs.create_dss_message_attributes(
@@ -232,6 +238,7 @@ def deposit(
                 dss_message_attributes,
                 dss_message_body,
             )
+            # Update article status in DynamoDB
             try:
                 dynamodb_client.update_doi_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.MESSAGE_SENT.value
@@ -247,6 +254,7 @@ def deposit(
         s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
 
+    # Send logs as email via SES
     ses_client = ses.SES(ctx.obj["aws_region"])
     email_message = ses_client.create_email(
         f"Automated Wiley deposit errors {date}",
