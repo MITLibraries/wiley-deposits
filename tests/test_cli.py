@@ -1,49 +1,10 @@
-import json
 import logging
 from http import HTTPStatus
 
-from awd.cli import (
-    cli,
-    create_list_of_dspace_item_files,
-    doi_to_be_added,
-    doi_to_be_retried,
-)
+from awd.cli import cli
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
-
-
-def test_create_list_of_dspace_item_files():
-    metadata_content = json.dumps({"key": "value"})
-    file_list = create_list_of_dspace_item_files("111.1-111", metadata_content, b"")
-    assert file_list == [
-        ("111.1-111.json", metadata_content),
-        ("111.1-111.pdf", b""),
-    ]
-
-
-def test_doi_to_be_added_true():
-    doi_items = [{"doi": "111.1/111"}]
-    validation_status = doi_to_be_added("222.2/2222", doi_items)
-    assert validation_status is True
-
-
-def test_doi_to_be_added_false():
-    doi_items = [{"doi": "111.1/1111"}]
-    validation_status = doi_to_be_added("111.1/1111", doi_items)
-    assert validation_status is False
-
-
-def test_doi_to_be_retried_true():
-    doi_items = [{"doi": "111.1/111", "status": str(Status.UNPROCESSED.value)}]
-    validation_status = doi_to_be_retried("111.1/111", doi_items)
-    assert validation_status is True
-
-
-def test_doi_to_be_retried_false():
-    doi_items = [{"doi": "111.1/111", "status": str(Status.SUCCESS.value)}]
-    validation_status = doi_to_be_retried("111.1/111", doi_items)
-    assert validation_status is False
 
 
 def test_deposit_success(
