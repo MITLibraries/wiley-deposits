@@ -8,6 +8,7 @@ from click.testing import CliRunner
 from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 
 from awd import config
+from awd.article import Article
 from awd.dynamodb import DynamoDB
 from awd.s3 import S3
 from awd.ses import SES
@@ -63,22 +64,27 @@ def test_aws_user():
 
 
 @pytest.fixture
-def dynamodb_class():
+def sample_article():
+    return Article(doi="111.1/1111")
+
+
+@pytest.fixture
+def dynamodb_client():
     return DynamoDB(config.AWS_REGION_NAME)
 
 
 @pytest.fixture
-def s3_class():
+def s3_client():
     return S3()
 
 
 @pytest.fixture
-def ses_class():
+def ses_client():
     return SES(config.AWS_REGION_NAME)
 
 
 @pytest.fixture
-def sqs_class():
+def sqs_client():
     return SQS(config.AWS_REGION_NAME)
 
 

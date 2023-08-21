@@ -3,13 +3,13 @@ from http import HTTPStatus
 from awd.status import Status
 
 
-def test_dynamodb_add_doi_item_to_database(mocked_dynamodb, dynamodb_class):
-    add_response = dynamodb_class.add_doi_item_to_database("test_dois", "222.2/2222")
+def test_dynamodb_add_doi_item_to_database(mocked_dynamodb, dynamodb_client):
+    add_response = dynamodb_client.add_doi_item_to_database("test_dois", "222.2/2222")
     assert add_response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
-def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_class):
-    dynamodb_class.client.put_item(
+def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_client):
+    dynamodb_client.client.put_item(
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
@@ -18,7 +18,7 @@ def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_cla
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    dois = dynamodb_class.retrieve_doi_items_from_database("test_dois")
+    dois = dynamodb_client.retrieve_doi_items_from_database("test_dois")
     assert dois == [
         {
             "doi": "111.1/1111",
@@ -29,8 +29,8 @@ def test_dynamodb_retrieve_doi_items_from_database(mocked_dynamodb, dynamodb_cla
     ]
 
 
-def test_dynamodb_retry_threshold_exceeded_false(mocked_dynamodb, dynamodb_class):
-    dynamodb_class.client.put_item(
+def test_dynamodb_retry_threshold_exceeded_false(mocked_dynamodb, dynamodb_client):
+    dynamodb_client.client.put_item(
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
@@ -39,12 +39,12 @@ def test_dynamodb_retry_threshold_exceeded_false(mocked_dynamodb, dynamodb_class
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    validation_status = dynamodb_class.attempts_exceeded("test_dois", "111.1/1111", "10")
+    validation_status = dynamodb_client.attempts_exceeded("test_dois", "111.1/1111", "10")
     assert validation_status is False
 
 
-def test_dynamodb_retry_threshold_exceeded_true(mocked_dynamodb, dynamodb_class):
-    dynamodb_class.client.put_item(
+def test_dynamodb_retry_threshold_exceeded_true(mocked_dynamodb, dynamodb_client):
+    dynamodb_client.client.put_item(
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
@@ -53,12 +53,12 @@ def test_dynamodb_retry_threshold_exceeded_true(mocked_dynamodb, dynamodb_class)
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    validation_status = dynamodb_class.attempts_exceeded("test_dois", "111.1/1111", "10")
+    validation_status = dynamodb_client.attempts_exceeded("test_dois", "111.1/1111", "10")
     assert validation_status is True
 
 
-def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb_class):
-    dynamodb_class.client.put_item(
+def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb_client):
+    dynamodb_client.client.put_item(
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
@@ -67,7 +67,7 @@ def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    existing_item = dynamodb_class.client.get_item(
+    existing_item = dynamodb_client.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
@@ -75,11 +75,11 @@ def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb
     assert existing_item["Item"]["doi"]["S"] == "111.1/1111"
     assert existing_item["Item"]["status"]["S"] == str(Status.UNPROCESSED.value)
     assert existing_item["Item"]["last_modified"]["S"] == "2022-01-28 10:28:53"
-    update_response = dynamodb_class.update_doi_item_attempts_in_database(
+    update_response = dynamodb_client.update_doi_item_attempts_in_database(
         "test_dois", "111.1/1111"
     )
     assert update_response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
-    updated_item = dynamodb_class.client.get_item(
+    updated_item = dynamodb_client.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
@@ -89,8 +89,8 @@ def test_dynamodb_update_doi_item_attempts_in_database(mocked_dynamodb, dynamodb
     assert updated_item["Item"]["last_modified"]["S"] != "2022-01-28 10:28:53"
 
 
-def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_class):
-    dynamodb_class.client.put_item(
+def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_client):
+    dynamodb_client.client.put_item(
         TableName="test_dois",
         Item={
             "doi": {"S": "111.1/1111"},
@@ -99,7 +99,7 @@ def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_c
             "last_modified": {"S": "2022-01-28 10:28:53"},
         },
     )
-    existing_item = dynamodb_class.client.get_item(
+    existing_item = dynamodb_client.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )
@@ -107,11 +107,11 @@ def test_dynamodb_update_doi_item_status_in_database(mocked_dynamodb, dynamodb_c
     assert existing_item["Item"]["doi"]["S"] == "111.1/1111"
     assert existing_item["Item"]["status"]["S"] == str(Status.UNPROCESSED.value)
     assert existing_item["Item"]["last_modified"]["S"] == "2022-01-28 10:28:53"
-    update_response = dynamodb_class.update_doi_item_status_in_database(
+    update_response = dynamodb_client.update_doi_item_status_in_database(
         "test_dois", "111.1/1111", Status.MESSAGE_SENT.value
     )
     assert update_response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
-    updated_item = dynamodb_class.client.get_item(
+    updated_item = dynamodb_client.client.get_item(
         TableName="test_dois",
         Key={"doi": {"S": "111.1/1111"}},
     )

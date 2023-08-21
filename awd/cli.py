@@ -2,57 +2,19 @@ import datetime
 import io
 import json
 import logging
-from typing import Any
 
 import click
 import sentry_sdk
 from botocore.exceptions import ClientError
 
 from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
+from awd.article import Article
 from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
-
-
-def create_list_of_dspace_item_files(
-    file_name: str, metadata_content: str, bitstream_content: bytes
-) -> list[tuple[str, str | bytes]]:
-    """Create a list of metadata and content tuples for a DSpace item."""
-    return [
-        (
-            f"{file_name}.json",
-            metadata_content,
-        ),
-        (
-            f"{file_name}.pdf",
-            bitstream_content,
-        ),
-    ]
-
-
-def doi_to_be_added(doi: str, doi_items: list[dict[str, Any]]) -> bool:
-    """Validate that a DOI is not a part of the database table and needs to  be added."""
-    validation_status = False
-    if not any(doi_item["doi"] == doi for doi_item in doi_items):
-        validation_status = True
-        logger.debug("%s added to database", doi)
-    return validation_status
-
-
-def doi_to_be_retried(doi: str, doi_items: list[dict[str, Any]]) -> bool:
-    """Validate that a DOI should be retried based on its status in the database table."""
-    validation_status = False
-    if any(
-        d
-        for d in doi_items
-        if d["doi"] == doi and d["status"] == str(Status.UNPROCESSED.value)
-    ):
-        validation_status = True
-        logger.debug("%s will be retried", doi)
-    return validation_status
 
 
 @click.group()
@@ -184,18 +146,20 @@ def deposit(
         logger.exception(
             "Error accessing bucket: %s, %s", bucket, e.response["Error"]["Message"]
         )
-        return
+        return  # Unable to access S3 bucket, exit
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
         try:
-            doi_items = dynamodb_client.retrieve_doi_items_from_database(
+            database_items = dynamodb_client.retrieve_doi_items_from_database(
                 ctx.obj["doi_table"]
             )
         except ClientError as e:
             logger.exception("Table read failed: %s", e.response["Error"]["Message"])
-            return
+            return  # Unable to read DynamoDB table, exit
         for doi in dois:
-            if doi_to_be_added(doi, doi_items):
+            article = Article(doi)
+            # check status of DOI in extracted database items, adding/updating as needed
+            if article.exists_in_database(database_items):
                 try:
                     dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
                 except ClientError as e:
@@ -204,7 +168,7 @@ def deposit(
                         doi,
                         e.response["Error"]["Message"],
                     )
-            elif doi_to_be_retried(doi, doi_items) is False:
+            elif article.has_retry_status(database_items) is False:
                 continue
             try:
                 dynamodb_client.update_doi_item_attempts_in_database(
@@ -218,31 +182,49 @@ def deposit(
                     doi,
                     e.response["Error"]["Message"],
                 )
+
+            # Retrieve and validate Crossref metadata
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
-            value_dict = crossref.get_metadata_extract_from(crossref_response.json())
-            metadata = crossref.create_dspace_metadata_from_dict(
-                value_dict, "config/metadata_mapping.json"
+            article.crossref_metadata = crossref.get_metadata_extract_from(
+                crossref_response.json()
             )
-            if crossref.is_valid_dspace_metadata(metadata) is False:
+
+            # Create and validate DSpace metadata from Crossref metadata
+            article.dspace_metadata = crossref.create_dspace_metadata_from_dict(
+                article.crossref_metadata,
+                "config/metadata_mapping.json",
+            )
+            if crossref.is_valid_dspace_metadata(article.dspace_metadata) is False:
                 continue
+
+            # Retrieve and validate PDF from Wiley server
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
                 continue
+            article.article_content = wiley_response.content
             doi_file_name = doi.replace(
                 "/", "-"
             )  # 10.1002/term.3131 to 10.1002-term.3131
+
+            # Upload DSpace metadata and PDF to S3 bucket
             try:
-                for file_name, file_contents in create_list_of_dspace_item_files(
-                    doi_file_name, json.dumps(metadata), wiley_response.content
-                ):
-                    s3_client.put_file(file_contents, bucket, file_name)
+                s3_client.put_file(
+                    json.dumps(article.dspace_metadata), bucket, f"{doi_file_name}.json"
+                )
+                s3_client.put_file(
+                    article.article_content, bucket, f"{doi_file_name}.pdf"
+                )
             except ClientError as e:
                 logger.exception(
-                    "Upload failed for  %s: %s", file_name, e.response["Error"]["Message"]
+                    "Upload failed for  %s: %s",
+                    doi_file_name,
+                    e.response["Error"]["Message"],
                 )
                 continue
+
+            # Send message to SQS queue for processing by dspace-submission-service
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
             metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
             dss_message_attributes = sqs.create_dss_message_attributes(
@@ -261,6 +243,8 @@ def deposit(
                 dss_message_attributes,
                 dss_message_body,
             )
+
+            # Update article status in DynamoDB
             try:
                 dynamodb_client.update_doi_item_status_in_database(
                     ctx.obj["doi_table"], doi, Status.MESSAGE_SENT.value
@@ -276,6 +260,7 @@ def deposit(
         s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
 
+    # Send logs as email via SES
     ses_client = ses.SES(ctx.obj["aws_region"])
     email_message = ses_client.create_email(
         f"Automated Wiley deposit errors {date}",
