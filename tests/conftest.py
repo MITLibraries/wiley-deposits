@@ -64,27 +64,27 @@ def test_aws_user():
 
 
 @pytest.fixture
-def article_instance():
+def sample_article():
     return Article(doi="111.1/1111")
 
 
 @pytest.fixture
-def dynamodb_instance():
+def dynamodb_client():
     return DynamoDB(config.AWS_REGION_NAME)
 
 
 @pytest.fixture
-def s3_instance():
+def s3_client():
     return S3()
 
 
 @pytest.fixture
-def ses_instance():
+def ses_client():
     return SES(config.AWS_REGION_NAME)
 
 
 @pytest.fixture
-def sqs_instance():
+def sqs_client():
     return SQS(config.AWS_REGION_NAME)
 
 

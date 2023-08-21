@@ -8,46 +8,46 @@ from awd import sqs
 
 def test_sqs_delete_success(
     mocked_sqs,
-    sqs_instance,
+    sqs_client,
     result_success_message_attributes,
     result_success_message_body,
 ):
-    sqs_instance.send(
+    sqs_client.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-output-queue",
         result_success_message_attributes,
         result_success_message_body,
     )
-    messages = sqs_instance.receive(
+    messages = sqs_client.receive(
         "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
     )
     receipt_handle = next(messages)["ReceiptHandle"]
-    response = sqs_instance.delete(
+    response = sqs_client.delete(
         "https://queue.amazonaws.com/123456789012/", "mock-output-queue", receipt_handle
     )
     assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
-def test_sqs_delete_failure(mocked_sqs, sqs_instance):
+def test_sqs_delete_failure(mocked_sqs, sqs_client):
     with pytest.raises(ClientError):
-        sqs_instance.delete(
+        sqs_client.delete(
             "https://queue.amazonaws.com/123456789012/", "non-existent", "12345678"
         )
 
 
 def test_sqs_receive_success(
     mocked_sqs,
-    sqs_instance,
+    sqs_client,
     result_success_message_attributes,
     result_success_message_body,
 ):
-    sqs_instance.send(
+    sqs_client.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-output-queue",
         result_success_message_attributes,
         result_success_message_body,
     )
-    messages = sqs_instance.receive(
+    messages = sqs_client.receive(
         "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
     )
     for message in messages:
@@ -55,19 +55,19 @@ def test_sqs_receive_success(
         assert message["MessageAttributes"] == result_success_message_attributes
 
 
-def test_sqs_receive_failure(mocked_sqs, sqs_instance):
+def test_sqs_receive_failure(mocked_sqs, sqs_client):
     with pytest.raises(ClientError):
         next(
-            sqs_instance.receive(
+            sqs_client.receive(
                 "https://queue.amazonaws.com/123456789012/", "non-existent"
             )
         )
 
 
 def test_sqs_send_success(
-    mocked_sqs, sqs_instance, submission_message_attributes, submission_message_body
+    mocked_sqs, sqs_client, submission_message_attributes, submission_message_body
 ):
-    response = sqs_instance.send(
+    response = sqs_client.send(
         "https://queue.amazonaws.com/123456789012/",
         "mock-input-queue",
         submission_message_attributes,
@@ -77,10 +77,10 @@ def test_sqs_send_success(
 
 
 def test_sqs_send_failure(
-    mocked_sqs, sqs_instance, submission_message_attributes, submission_message_body
+    mocked_sqs, sqs_client, submission_message_attributes, submission_message_body
 ):
     with pytest.raises(ClientError):
-        sqs_instance.send(
+        sqs_client.send(
             "https://queue.amazonaws.com/123456789012/",
             "non-existent",
             submission_message_attributes,

@@ -182,6 +182,7 @@ def deposit(
                     doi,
                     e.response["Error"]["Message"],
                 )
+
             # Retrieve and validate Crossref metadata
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_response) is False:
@@ -189,6 +190,7 @@ def deposit(
             article.crossref_metadata = crossref.get_metadata_extract_from(
                 crossref_response.json()
             )
+
             # Create and validate DSpace metadata from Crossref metadata
             article.dspace_metadata = crossref.create_dspace_metadata_from_dict(
                 article.crossref_metadata,
@@ -196,6 +198,7 @@ def deposit(
             )
             if crossref.is_valid_dspace_metadata(article.dspace_metadata) is False:
                 continue
+
             # Retrieve and validate PDF from Wiley server
             wiley_response = wiley.get_wiley_response(content_url, doi)
             if wiley.is_valid_response(doi, wiley_response) is False:
@@ -204,6 +207,7 @@ def deposit(
             doi_file_name = doi.replace(
                 "/", "-"
             )  # 10.1002/term.3131 to 10.1002-term.3131
+
             # Upload DSpace metadata and PDF to S3 bucket
             try:
                 s3_client.put_file(
@@ -219,6 +223,7 @@ def deposit(
                     e.response["Error"]["Message"],
                 )
                 continue
+
             # Send message to SQS queue for processing by dspace-submission-service
             bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
             metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
@@ -238,6 +243,7 @@ def deposit(
                 dss_message_attributes,
                 dss_message_body,
             )
+
             # Update article status in DynamoDB
             try:
                 dynamodb_client.update_doi_item_status_in_database(

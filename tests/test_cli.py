@@ -15,18 +15,18 @@ def test_deposit_success(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    s3_instance,
-    sqs_instance,
+    s3_client,
+    sqs_client,
     submission_message_body,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        s3_instance.put_file(
+        s3_client.put_file(
             doi_list_success,
             "awd",
             "doi_success.csv",
         )
-        assert len(s3_instance.client.list_objects(Bucket="awd")["Contents"]) == 1
+        assert len(s3_client.client.list_objects(Bucket="awd")["Contents"]) == 1
         result = runner.invoke(
             cli,
             [
@@ -56,19 +56,19 @@ def test_deposit_success(
             ],
         )
         assert result.exit_code == 0
-        uploaded_metadata = s3_instance.client.get_object(
+        uploaded_metadata = s3_client.client.get_object(
             Bucket="awd", Key="10.1002-term.3131.json"
         )
         assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
-        s3_instance.client.get_object(Bucket="awd", Key="10.1002-term.3131.pdf")
+        s3_client.client.get_object(Bucket="awd", Key="10.1002-term.3131.pdf")
         assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
-        messages = sqs_instance.receive(
+        messages = sqs_client.receive(
             "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
         )
         for message in messages:
             assert message["Body"] == submission_message_body
         assert (
-            len(s3_instance.client.list_objects(Bucket="awd")["Contents"])
+            len(s3_client.client.list_objects(Bucket="awd")["Contents"])
             == 3  # noqa: PLR2004
         )
         assert "Submission process has completed" in caplog.text
@@ -83,11 +83,11 @@ def test_deposit_insufficient_metadata(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    s3_instance,
+    s3_client,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        s3_instance.put_file(
+        s3_client.put_file(
             doi_list_insufficient_metadata,
             "awd",
             "doi_insufficient_metadata.csv",
@@ -125,7 +125,7 @@ def test_deposit_insufficient_metadata(
             "Insufficient metadata for 10.1002/nome.tadata, missing title or URL"
             in caplog.text
         )
-        assert len(s3_instance.client.list_objects(Bucket="awd")["Contents"]) == 1
+        assert len(s3_client.client.list_objects(Bucket="awd")["Contents"]) == 1
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
 
@@ -138,11 +138,11 @@ def test_deposit_pdf_unavailable(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    s3_instance,
+    s3_client,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        s3_instance.put_file(
+        s3_client.put_file(
             doi_list_pdf_unavailable,
             "awd",
             "doi_pdf_unavailable.csv",
@@ -177,7 +177,7 @@ def test_deposit_pdf_unavailable(
         )
         assert result.exit_code == 0
         assert "A PDF could not be retrieved for DOI: 10.1002/none.0000" in caplog.text
-        assert len(s3_instance.client.list_objects(Bucket="awd")["Contents"]) == 1
+        assert len(s3_client.client.list_objects(Bucket="awd")["Contents"]) == 1
         assert "Submission process has completed" in caplog.text
         assert "Logs sent to" in caplog.text
 
@@ -189,7 +189,7 @@ def test_deposit_s3_nonexistent_bucket(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    s3_instance,
+    s3_client,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
@@ -237,11 +237,11 @@ def test_deposit_dynamodb_error(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    s3_instance,
+    s3_client,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        s3_instance.put_file(
+        s3_client.put_file(
             doi_list_success,
             "awd",
             "doi_success.csv",
@@ -286,8 +286,8 @@ def test_listen_success(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    dynamodb_instance,
-    sqs_instance,
+    dynamodb_client,
+    sqs_client,
     result_failure_message_attributes,
     result_success_message_attributes,
     result_failure_message_body,
@@ -295,19 +295,19 @@ def test_listen_success(
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        sqs_instance.send(
+        sqs_client.send(
             "https://queue.amazonaws.com/123456789012/",
             "mock-output-queue",
             result_failure_message_attributes,
             result_failure_message_body,
         )
-        sqs_instance.send(
+        sqs_client.send(
             "https://queue.amazonaws.com/123456789012/",
             "mock-output-queue",
             result_success_message_attributes,
             result_success_message_body,
         )
-        dynamodb_instance.client.put_item(
+        dynamodb_client.client.put_item(
             TableName="test_dois",
             Item={
                 "doi": {"S": "111.1/1111"},
@@ -316,7 +316,7 @@ def test_listen_success(
                 "last_modified": {"S": "'2022-01-28 09:28:53"},
             },
         )
-        dynamodb_instance.client.put_item(
+        dynamodb_client.client.put_item(
             TableName="test_dois",
             Item={
                 "doi": {"S": "222.2/2222"},
@@ -351,7 +351,7 @@ def test_listen_success(
         assert str(result_failure_message_body) in caplog.text
         assert str(result_success_message_body) in caplog.text
         assert "Messages received and deleted from output queue" in caplog.text
-        messages = sqs_instance.receive(
+        messages = sqs_client.receive(
             "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
         )
         assert next(messages, None) is None
