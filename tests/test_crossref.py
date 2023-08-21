@@ -17,25 +17,6 @@ def test_get_crossref_work_from_doi(mocked_web):
     assert work["message"]["title"] == ["Metal nanoparticles for bone tissue engineering"]
 
 
-def test_is_valid_dspace_metadata_success():
-    validation_status = crossref.is_valid_dspace_metadata(
-        {"metadata": [{"key": "dc.title", "value": "123"}]}
-    )
-    assert validation_status is True
-
-
-def test_is_valid_dspace_metadata_no_metadata():
-    validation_status = crossref.is_valid_dspace_metadata({})
-    assert validation_status is False
-
-
-def test_is_valid_dspace_metadata_incorrect_fields():
-    validation_status = crossref.is_valid_dspace_metadata(
-        {"metadata": [{"key": "dc.example", "value": "123"}]}
-    )
-    assert validation_status is False
-
-
 def test_is_valid_response_failure():
     response = Mock()
     response.json.return_value = {}

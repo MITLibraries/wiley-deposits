@@ -119,3 +119,32 @@ class Article:
                 else:
                     metadata.append({"key": metadata_mapping[key], "value": work[key]})
             return {"metadata": metadata}
+
+    def valid_dspace_metadata(self) -> bool:
+        """Validate that metadata follows the format expected by DSpace."""
+        approved_metadata_fields = [
+            "dc.contributor.author",
+            "dc.relation.journal",
+            "dc.identifier.issn",
+            "mit.journal.issue",
+            "dc.date.issued",
+            "dc.language",
+            "dc.title.alternative",
+            "dc.publisher",
+            "dc.title",
+            "dc.relation.isversionof",
+            "mit.journal.volume",
+        ]
+        valid = False
+        if self.dspace_metadata.get("metadata") is not None:
+            for element in self.dspace_metadata["metadata"]:
+                if (
+                    element.get("key") is not None
+                    and element.get("value") is not None
+                    and element.get("key") in approved_metadata_fields
+                ):
+                    valid = True
+            logger.debug("Valid DSpace metadata created")
+        else:
+            logger.exception("Invalid DSpace metadata created: %s ", self.dspace_metadata)
+        return valid

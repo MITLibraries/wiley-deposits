@@ -194,7 +194,7 @@ def deposit(
             article.dspace_metadata = article.create_dspace_metadata(
                 "config/metadata_mapping.json",
             )
-            if crossref.is_valid_dspace_metadata(article.dspace_metadata) is False:
+            if article.valid_dspace_metadata() is False:
                 continue
 
             # Retrieve and validate PDF from Wiley server

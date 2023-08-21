@@ -48,3 +48,18 @@ def test_create_dspace_metadata_full_metadata(
     sample_article.crossref_metadata = crossref_work_record_full
     metadata = sample_article.create_dspace_metadata("config/metadata_mapping.json")
     assert metadata == dspace_metadata
+
+
+def test_valid_dspace_metadata_success(sample_article):
+    sample_article.dspace_metadata = {"metadata": [{"key": "dc.title", "value": "123"}]}
+    assert sample_article.valid_dspace_metadata() is True
+
+
+def test_valid_dspace_metadata_no_metadata(sample_article):
+    sample_article.dspace_metadata = {}
+    assert sample_article.valid_dspace_metadata() is False
+
+
+def test_valid_dspace_metadata_incorrect_fields(sample_article):
+    sample_article.dspace_metadata = {"metadata": [{"key": "dc.example", "value": "123"}]}
+    assert sample_article.valid_dspace_metadata() is False

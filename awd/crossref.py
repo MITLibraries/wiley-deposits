@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterator
-from typing import Any
 
 import requests
 import smart_open
@@ -26,36 +25,6 @@ def get_response_from_doi(url: str, doi: str) -> requests.Response:
     )
     logger.debug("Response code retrieved from Crossref for %s: %s", doi, response)
     return response
-
-
-def is_valid_dspace_metadata(dspace_metadata: dict[str, Any]) -> bool:
-    """Validate that the metadata follows the format expected by DSpace."""
-    approved_metadata_fields = [
-        "dc.contributor.author",
-        "dc.relation.journal",
-        "dc.identifier.issn",
-        "mit.journal.issue",
-        "dc.date.issued",
-        "dc.language",
-        "dc.title.alternative",
-        "dc.publisher",
-        "dc.title",
-        "dc.relation.isversionof",
-        "mit.journal.volume",
-    ]
-    is_valid = False
-    if dspace_metadata.get("metadata") is not None:
-        for element in dspace_metadata["metadata"]:
-            if (
-                element.get("key") is not None
-                and element.get("value") is not None
-                and element.get("key") in approved_metadata_fields
-            ):
-                is_valid = True
-        logger.debug("Valid DSpace metadata generated")
-    else:
-        logger.exception("Invalid DSpace metadata generated: %s ", dspace_metadata)
-    return is_valid
 
 
 def is_valid_response(doi: str, crossref_response: requests.Response) -> bool:
