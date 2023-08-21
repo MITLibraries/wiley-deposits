@@ -1,0 +1,1719 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message-version": "1.0.0",
+  "message": {
+    "indexed": {
+      "date-parts": [
+        [
+          2021,
+          7,
+          19
+        ]
+      ],
+      "date-time": "2021-07-19T06:24:53Z",
+      "timestamp": 1626675893700
+    },
+    "reference-count": 259,
+    "publisher": "Wiley",
+    "issue": "12",
+    "license": [
+      {
+        "start": {
+          "date-parts": [
+            [
+              2020,
+              9,
+              30
+            ]
+          ],
+          "date-time": "2020-09-30T00:00:00Z",
+          "timestamp": 1601424000000
+        },
+        "content-version": "vor",
+        "delay-in-days": 0,
+        "URL": "http://onlinelibrary.wiley.com/termsAndConditions#vor"
+      },
+      {
+        "start": {
+          "date-parts": [
+            [
+              2020,
+              9,
+              30
+            ]
+          ],
+          "date-time": "2020-09-30T00:00:00Z",
+          "timestamp": 1601424000000
+        },
+        "content-version": "tdm",
+        "delay-in-days": 0,
+        "URL": "http://doi.wiley.com/10.1002/tdm_license_1.1"
+      }
+    ],
+    "content-domain": {
+      "domain": [
+        "onlinelibrary.wiley.com"
+      ],
+      "crossmark-restriction": true
+    },
+    "short-container-title": [
+      "J Tissue Eng Regen Med"
+    ],
+    "published-print": {
+      "date-parts": [
+        [
+          2020,
+          12
+        ]
+      ]
+    },
+    "DOI": "10.1002/term.3131",
+    "type": "journal-article",
+    "created": {
+      "date-parts": [
+        [
+          2020,
+          9,
+          28
+        ]
+      ],
+      "date-time": "2020-09-28T20:09:24Z",
+      "timestamp": 1601323764000
+    },
+    "page": "1687-1714",
+    "update-policy": "http://dx.doi.org/10.1002/crossmark_policy",
+    "source": "Crossref",
+    "is-referenced-by-count": 14,
+    "title": [
+      "Metal nanoparticles for bone tissue engineering"
+    ],
+    "prefix": "10.1002",
+    "volume": "14",
+    "author": [
+      {
+        "ORCID": "http://orcid.org/0000-0002-6706-4231",
+        "authenticated-orcid": false,
+        "given": "Ehsan",
+        "family": "Bahojb Noruzi",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Faculty of Chemistry, Department of Inorganic Chemistry University of Tabriz  Tabriz Iran"
+          },
+          {
+            "name": "Drug Applied Research Center Tabriz University of Medical Sciences  Tabriz Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0002-0119-0331",
+        "authenticated-orcid": false,
+        "given": "Karim",
+        "family": "Khanmohammadi Chenab",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0001-7604-688X",
+        "authenticated-orcid": false,
+        "given": "Amir",
+        "family": "Jafari",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Medical Nanotechnology, Faculty of Advanced Technology in Medicine Iran University of Medical Sciences  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0003-0860-2236",
+        "authenticated-orcid": false,
+        "given": "Fateme",
+        "family": "Radinekiyan",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0001-5150-6405",
+        "authenticated-orcid": false,
+        "given": "Seyed Masoud",
+        "family": "Hashemi",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0002-0465-5771",
+        "authenticated-orcid": false,
+        "given": "Farnoush",
+        "family": "Ahmadpour",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0003-4719-6998",
+        "authenticated-orcid": false,
+        "given": "Ali",
+        "family": "Behboudi",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Faculty of Chemical, Petroleum and Gas Engineering Iran University of Science and Technology  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0002-2897-0039",
+        "authenticated-orcid": false,
+        "given": "Jafar",
+        "family": "Mosafer",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Research Center of Advanced Technologies in Medicine Torbat Heydariyeh University of Medical Sciences  Torbat Heydariyeh Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0002-4515-8675",
+        "authenticated-orcid": false,
+        "given": "Ahad",
+        "family": "Mokhtarzadeh",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Immunology Research Center Tabriz University of Medical Sciences  Tabriz Iran"
+          },
+          {
+            "name": "Department of Biotechnology Higher Education Institute of Rab‐Rashid  Tabriz Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0001-5490-3350",
+        "authenticated-orcid": false,
+        "given": "Ali",
+        "family": "Maleki",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
+          }
+        ]
+      },
+      {
+        "ORCID": "http://orcid.org/0000-0001-6431-4605",
+        "authenticated-orcid": false,
+        "given": "Michael R.",
+        "family": "Hamblin",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Wellman Center for Photomedicine Massachusetts General Hospital  Boston Massachusetts USA"
+          },
+          {
+            "name": "Department of Dermatology Harvard Medical School  Boston Massachusetts USA"
+          },
+          {
+            "name": "Harvard‐MIT Division of Health Sciences and Technology  Cambridge Massachusetts USA"
+          }
+        ]
+      }
+    ],
+    "member": "311",
+    "published-online": {
+      "date-parts": [
+        [
+          2020,
+          9,
+          30
+        ]
+      ]
+    },
+    "reference": [
+      {
+        "key": "e_1_2_9_2_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/adfm.201002662"
+      },
+      {
+        "key": "e_1_2_9_3_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s10856-010-4005-9"
+      },
+      {
+        "key": "e_1_2_9_4_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/0022-3913(93)90289-Z"
+      },
+      {
+        "key": "e_1_2_9_5_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/pc.25545"
+      },
+      {
+        "key": "e_1_2_9_6_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2016.09.039"
+      },
+      {
+        "key": "e_1_2_9_7_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/smll.200801546"
+      },
+      {
+        "key": "e_1_2_9_8_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijom.2016.01.004"
+      },
+      {
+        "key": "e_1_2_9_9_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3109/02656736.2013.826825"
+      },
+      {
+        "key": "e_1_2_9_10_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3389/fchem.2019.00663"
+      },
+      {
+        "key": "e_1_2_9_11_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/molecules25020370"
+      },
+      {
+        "key": "e_1_2_9_12_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2018.01.122"
+      },
+      {
+        "key": "e_1_2_9_13_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1142/S2010324719400034"
+      },
+      {
+        "key": "e_1_2_9_14_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jmri.24691"
+      },
+      {
+        "key": "e_1_2_9_15_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/nn505015e"
+      },
+      {
+        "key": "e_1_2_9_16_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.carbpol.2016.06.034"
+      },
+      {
+        "key": "e_1_2_9_17_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2016.11.052"
+      },
+      {
+        "key": "e_1_2_9_18_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C7NJ01246B"
+      },
+      {
+        "key": "e_1_2_9_19_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s00204-013-1079-4"
+      },
+      {
+        "key": "e_1_2_9_20_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/978-3-319-76090-2_10"
+      },
+      {
+        "key": "e_1_2_9_21_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.b.34185"
+      },
+      {
+        "key": "e_1_2_9_22_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s10856-014-5240-2"
+      },
+      {
+        "key": "e_1_2_9_23_1",
+        "doi-asserted-by": "crossref",
+        "first-page": "1",
+        "DOI": "10.1155/2013/976765",
+        "article-title": "Loss of RASSF1A expression in colorectal cancer and its association with K‐ras status",
+        "volume": "2013",
+        "author": "Cao D.",
+        "year": "2013",
+        "journal-title": "BioMed Research International"
+      },
+      {
+        "key": "e_1_2_9_24_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.b.33900"
+      },
+      {
+        "key": "e_1_2_9_25_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s11427-017-9287-8"
+      },
+      {
+        "key": "e_1_2_9_26_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S0142-9612(03)00486-1"
+      },
+      {
+        "key": "e_1_2_9_27_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.a.34492"
+      },
+      {
+        "key": "e_1_2_9_28_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/acsami.8b17427"
+      },
+      {
+        "key": "e_1_2_9_29_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1371/journal.pone.0113426"
+      },
+      {
+        "key": "e_1_2_9_30_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C6NR06421C"
+      },
+      {
+        "key": "e_1_2_9_31_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2019.02.006"
+      },
+      {
+        "key": "e_1_2_9_32_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2015.12.005"
+      },
+      {
+        "key": "e_1_2_9_33_1",
+        "first-page": "4383",
+        "article-title": "Gold nanoparticles promote osteogenic differentiation in human adipose‐derived mesenchymal stem cells through the Wnt/β‐catenin signaling pathway",
+        "volume": "10",
+        "author": "Choi S. Y.",
+        "year": "2015",
+        "journal-title": "International Journal of Nanomedicine"
+      },
+      {
+        "key": "e_1_2_9_34_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.toxlet.2012.11.022"
+      },
+      {
+        "key": "e_1_2_9_35_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S0142-9612(98)00182-3"
+      },
+      {
+        "key": "e_1_2_9_36_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2017.11.020"
+      },
+      {
+        "key": "e_1_2_9_37_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1166/jbn.2015.2065"
+      },
+      {
+        "key": "e_1_2_9_38_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/c0nr00598c"
+      },
+      {
+        "key": "e_1_2_9_39_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1166/jbn.2015.2115"
+      },
+      {
+        "key": "e_1_2_9_40_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biotechadv.2010.10.003"
+      },
+      {
+        "key": "e_1_2_9_41_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1111/ijac.13076"
+      },
+      {
+        "key": "e_1_2_9_42_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C1CS15166E"
+      },
+      {
+        "key": "e_1_2_9_43_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2019.110267"
+      },
+      {
+        "key": "e_1_2_9_44_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jare.2019.03.011"
+      },
+      {
+        "key": "e_1_2_9_45_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/open.202000005"
+      },
+      {
+        "key": "e_1_2_9_46_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.trac.2016.12.003"
+      },
+      {
+        "key": "e_1_2_9_47_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.trac.2018.03.019"
+      },
+      {
+        "key": "e_1_2_9_48_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.trac.2017.12.019"
+      },
+      {
+        "key": "e_1_2_9_49_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s00604-019-3420-y"
+      },
+      {
+        "key": "e_1_2_9_50_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s10853-019-04005-6"
+      },
+      {
+        "key": "e_1_2_9_51_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2019.08.031"
+      },
+      {
+        "key": "e_1_2_9_52_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1088/1748-605X/aad8cf"
+      },
+      {
+        "key": "e_1_2_9_53_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2011.10.013"
+      },
+      {
+        "key": "e_1_2_9_54_1",
+        "first-page": "2392",
+        "article-title": "The effect of Cu (II)‐loaded brushite scaffolds on growth and activity of osteoblastic cells",
+        "volume": "100",
+        "author": "Ewald A.",
+        "year": "2012",
+        "journal-title": "Journal of Biomedical Materials Research Part A"
+      },
+      {
+        "key": "e_1_2_9_55_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2014.10.045"
+      },
+      {
+        "key": "e_1_2_9_56_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ceramint.2013.10.004"
+      },
+      {
+        "key": "e_1_2_9_57_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/ma10101177"
+      },
+      {
+        "key": "e_1_2_9_58_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2011.07.016"
+      },
+      {
+        "key": "e_1_2_9_59_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2533/chimia.2013.851"
+      },
+      {
+        "key": "e_1_2_9_60_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/adfm.201301121"
+      },
+      {
+        "key": "e_1_2_9_61_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1093/jac/dkh478"
+      },
+      {
+        "key": "e_1_2_9_62_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1111/j.1600-0501.2009.01734.x"
+      },
+      {
+        "key": "e_1_2_9_63_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2009.10.009"
+      },
+      {
+        "key": "e_1_2_9_64_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/anie.200904359"
+      },
+      {
+        "key": "e_1_2_9_65_1",
+        "first-page": "2",
+        "article-title": "BMPs and cancer: Is the risk real",
+        "volume": "1",
+        "author": "Gitelis S.",
+        "year": "2008",
+        "journal-title": "American Academy of Orthopaedic Surgeons"
+      },
+      {
+        "key": "e_1_2_9_66_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/ijms19030826"
+      },
+      {
+        "key": "e_1_2_9_67_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1177/1528083711414960"
+      },
+      {
+        "key": "e_1_2_9_68_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s00423-009-0472-1"
+      },
+      {
+        "key": "e_1_2_9_69_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2174/1381612821666151027151702"
+      },
+      {
+        "key": "e_1_2_9_70_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.matchemphys.2017.10.080"
+      },
+      {
+        "key": "e_1_2_9_71_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.knee.2010.09.003"
+      },
+      {
+        "key": "e_1_2_9_72_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2147/IJN.S153758"
+      },
+      {
+        "key": "e_1_2_9_73_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s10544-015-9993-2"
+      },
+      {
+        "key": "e_1_2_9_74_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2018.01.089"
+      },
+      {
+        "key": "e_1_2_9_75_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jmmm.2018.06.019"
+      },
+      {
+        "key": "e_1_2_9_76_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2016.03.002"
+      },
+      {
+        "key": "e_1_2_9_77_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ceramint.2014.10.153"
+      },
+      {
+        "key": "e_1_2_9_78_1",
+        "first-page": "1",
+        "article-title": "Toxicity of manufactured copper nanoparticles—A review",
+        "volume": "3",
+        "author": "Hejazy M.",
+        "year": "2018",
+        "journal-title": "Nanomedicine Research Journal"
+      },
+      {
+        "key": "e_1_2_9_79_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2011.06.043"
+      },
+      {
+        "key": "e_1_2_9_80_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C3TB21246G"
+      },
+      {
+        "key": "e_1_2_9_81_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1089/ten.tec.2014.0236"
+      },
+      {
+        "key": "e_1_2_9_82_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2013.08.026"
+      },
+      {
+        "key": "e_1_2_9_83_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S0142-9612(03)00582-9"
+      },
+      {
+        "key": "e_1_2_9_84_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1371/journal.pone.0210285"
+      },
+      {
+        "key": "e_1_2_9_85_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s00253-013-5422-8"
+      },
+      {
+        "key": "e_1_2_9_86_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/pc.25098"
+      },
+      {
+        "key": "e_1_2_9_87_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2017.07.083"
+      },
+      {
+        "key": "e_1_2_9_88_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1166/jnn.2012.6574"
+      },
+      {
+        "key": "e_1_2_9_89_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2014.05.074"
+      },
+      {
+        "key": "e_1_2_9_90_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.b.10071"
+      },
+      {
+        "key": "e_1_2_9_91_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/(SICI)1097-4636(19991215)47:4<481::AID-JBM4>3.0.CO;2-Y"
+      },
+      {
+        "key": "e_1_2_9_92_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1038/jid.2014.281"
+      },
+      {
+        "key": "e_1_2_9_93_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1128/AEM.02001-07"
+      },
+      {
+        "key": "e_1_2_9_94_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1049/iet-nbt.2013.0067"
+      },
+      {
+        "key": "e_1_2_9_95_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.addr.2012.09.013"
+      },
+      {
+        "key": "e_1_2_9_96_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jallcom.2017.07.288"
+      },
+      {
+        "key": "e_1_2_9_97_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C9BM00558G"
+      },
+      {
+        "key": "e_1_2_9_98_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.copbio.2006.08.009"
+      },
+      {
+        "key": "e_1_2_9_99_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2014.04.012"
+      },
+      {
+        "key": "e_1_2_9_100_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C4BM00390J"
+      },
+      {
+        "key": "e_1_2_9_101_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C4RA00040D"
+      },
+      {
+        "key": "e_1_2_9_102_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2006.12.001"
+      },
+      {
+        "key": "e_1_2_9_103_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jopr.2013.02.021"
+      },
+      {
+        "key": "e_1_2_9_104_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3109/21691401.2014.982799"
+      },
+      {
+        "key": "e_1_2_9_105_1",
+        "first-page": "1",
+        "article-title": "Magnetic nanoparticles in cancer therapy: How can thermal approaches help?",
+        "volume": "12",
+        "author": "Kolosnjaj‐Tabi J.",
+        "year": "2017",
+        "journal-title": "Future Medicine"
+      },
+      {
+        "key": "e_1_2_9_106_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s11999-014-4020-0"
+      },
+      {
+        "key": "e_1_2_9_107_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1089/ten.2006.0394"
+      },
+      {
+        "key": "e_1_2_9_108_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2019.01.064"
+      },
+      {
+        "key": "e_1_2_9_109_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2011.01.003"
+      },
+      {
+        "key": "e_1_2_9_110_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/polym10070804"
+      },
+      {
+        "key": "e_1_2_9_111_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.drudis.2014.01.012"
+      },
+      {
+        "key": "e_1_2_9_112_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jiec.2018.05.030"
+      },
+      {
+        "key": "e_1_2_9_113_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2147/IJN.S112415"
+      },
+      {
+        "key": "e_1_2_9_114_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2017.03.014"
+      },
+      {
+        "key": "e_1_2_9_115_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C5TB01784J"
+      },
+      {
+        "key": "e_1_2_9_116_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2016.03.011"
+      },
+      {
+        "key": "e_1_2_9_117_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2013.03.052"
+      },
+      {
+        "key": "e_1_2_9_118_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/cphc.201701294"
+      },
+      {
+        "key": "e_1_2_9_119_1",
+        "first-page": "797S",
+        "article-title": "Copper biochemistry and molecular biology",
+        "volume": "63",
+        "author": "Linder M. C.",
+        "year": "1996",
+        "journal-title": "The American Journal of Clinical Nutrition"
+      },
+      {
+        "key": "e_1_2_9_120_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2010.11.001"
+      },
+      {
+        "key": "e_1_2_9_121_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s11434-010-0046-1"
+      },
+      {
+        "key": "e_1_2_9_122_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2006.03.007"
+      },
+      {
+        "key": "e_1_2_9_123_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/cmdc.200900502"
+      },
+      {
+        "key": "e_1_2_9_124_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.apsusc.2018.12.216"
+      },
+      {
+        "key": "e_1_2_9_125_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2018.05.041"
+      },
+      {
+        "key": "e_1_2_9_126_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1089/ten.teb.2012.0437"
+      },
+      {
+        "key": "e_1_2_9_127_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jconrel.2010.06.011"
+      },
+      {
+        "key": "e_1_2_9_128_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/21691401.2018.1465947"
+      },
+      {
+        "key": "e_1_2_9_129_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C5NR04003E"
+      },
+      {
+        "key": "e_1_2_9_130_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1088/1748-6041/10/3/035013"
+      },
+      {
+        "key": "e_1_2_9_131_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.b.34130"
+      },
+      {
+        "key": "e_1_2_9_132_1",
+        "first-page": "68",
+        "article-title": "Bone regeneration using bio‐nanocomposite tissue reinforced with bioactive nanoparticles for femoral defect applications in medicine",
+        "volume": "12",
+        "author": "Maghsoudlou M. A.",
+        "year": "2020",
+        "journal-title": "Avicenna Journal of Medical Biotechnology"
+      },
+      {
+        "key": "e_1_2_9_133_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ultsonch.2017.01.022"
+      },
+      {
+        "key": "e_1_2_9_134_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.catcom.2014.05.004"
+      },
+      {
+        "key": "e_1_2_9_135_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1049/mnl.2017.0560"
+      },
+      {
+        "key": "e_1_2_9_136_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1177/0885328219835995"
+      },
+      {
+        "key": "e_1_2_9_137_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1177/0363546512439026"
+      },
+      {
+        "key": "e_1_2_9_138_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2018.03.128"
+      },
+      {
+        "key": "e_1_2_9_139_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.trac.2017.10.005"
+      },
+      {
+        "key": "e_1_2_9_140_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ceramint.2018.10.016"
+      },
+      {
+        "key": "e_1_2_9_141_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s12178-011-9095-6"
+      },
+      {
+        "key": "e_1_2_9_142_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1088/0957-4484/16/10/059"
+      },
+      {
+        "key": "e_1_2_9_143_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jcp.28457"
+      },
+      {
+        "key": "e_1_2_9_144_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3349/ymj.2000.41.6.735"
+      },
+      {
+        "key": "e_1_2_9_145_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1038/sj.ejcn.1601867"
+      },
+      {
+        "key": "e_1_2_9_146_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S1369-7021(11)70058-X"
+      },
+      {
+        "key": "e_1_2_9_147_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2006.07.034"
+      },
+      {
+        "key": "e_1_2_9_148_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2011.03.002"
+      },
+      {
+        "key": "e_1_2_9_149_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s10934-013-9757-4"
+      },
+      {
+        "key": "e_1_2_9_150_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ajodo.2011.02.021"
+      },
+      {
+        "key": "e_1_2_9_151_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.11607/jomi.4366"
+      },
+      {
+        "key": "e_1_2_9_152_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1080/10408390500466174"
+      },
+      {
+        "key": "e_1_2_9_153_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/smll.200700378"
+      },
+      {
+        "key": "e_1_2_9_154_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s00264-013-1917-2"
+      },
+      {
+        "key": "e_1_2_9_155_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/adma.200800004"
+      },
+      {
+        "key": "e_1_2_9_156_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2018.12.067"
+      },
+      {
+        "key": "e_1_2_9_157_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2007.03.005"
+      },
+      {
+        "key": "e_1_2_9_158_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2011.09.016"
+      },
+      {
+        "key": "e_1_2_9_159_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S0142-9612(02)00352-6"
+      },
+      {
+        "key": "e_1_2_9_160_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s10971-015-3697-1"
+      },
+      {
+        "key": "e_1_2_9_161_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.carbpol.2014.03.041"
+      },
+      {
+        "key": "e_1_2_9_162_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2018.11.256"
+      },
+      {
+        "key": "e_1_2_9_163_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3109/17435390903337693"
+      },
+      {
+        "key": "e_1_2_9_164_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C5RA09560C"
+      },
+      {
+        "key": "e_1_2_9_165_1",
+        "volume-title": "Efeito da incorporação de dióxido de zircônio nanoestruturado em uma resina adesiva experimental",
+        "author": "Provenzi C.",
+        "year": "2014"
+      },
+      {
+        "key": "e_1_2_9_166_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/ijms20020435"
+      },
+      {
+        "key": "e_1_2_9_167_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2010.06.051"
+      },
+      {
+        "key": "e_1_2_9_168_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2019.03.092"
+      },
+      {
+        "key": "e_1_2_9_169_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C8NJ01790E"
+      },
+      {
+        "key": "e_1_2_9_170_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2147/IJN.S194596"
+      },
+      {
+        "key": "e_1_2_9_171_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.carbpol.2019.115696"
+      },
+      {
+        "key": "e_1_2_9_172_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C7PY01701D"
+      },
+      {
+        "key": "e_1_2_9_173_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.carbpol.2018.05.059"
+      },
+      {
+        "key": "e_1_2_9_174_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s00264-010-1154-x"
+      },
+      {
+        "key": "e_1_2_9_175_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.apsusc.2013.09.160"
+      },
+      {
+        "key": "e_1_2_9_176_1",
+        "volume-title": "VI Latin American Congress on Biomedical Engineering CLAIB 2014, Paraná, Argentina 29, 30 & 31 October 2014",
+        "author": "Restrepo N.",
+        "year": "2015"
+      },
+      {
+        "key": "e_1_2_9_177_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.22203/eCM.v015a03"
+      },
+      {
+        "key": "e_1_2_9_178_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jcb.10111"
+      },
+      {
+        "key": "e_1_2_9_179_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1093/jac/dkn034"
+      },
+      {
+        "key": "e_1_2_9_180_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2012.07.036"
+      },
+      {
+        "key": "e_1_2_9_181_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2010.03.058"
+      },
+      {
+        "key": "e_1_2_9_182_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1097/00003086-200211000-00020"
+      },
+      {
+        "key": "e_1_2_9_183_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.4172/1948-593X.1000049"
+      },
+      {
+        "key": "e_1_2_9_184_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1038/7385"
+      },
+      {
+        "key": "e_1_2_9_185_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.a.30889"
+      },
+      {
+        "key": "e_1_2_9_186_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1111/hiv.12822"
+      },
+      {
+        "key": "e_1_2_9_187_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1140/epjp/i2019-12375-x"
+      },
+      {
+        "key": "e_1_2_9_188_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2007.06.015"
+      },
+      {
+        "key": "e_1_2_9_189_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jbiosc.2019.04.017"
+      },
+      {
+        "key": "e_1_2_9_190_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/acsami.5b00529"
+      },
+      {
+        "key": "e_1_2_9_191_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2011.04.010"
+      },
+      {
+        "key": "e_1_2_9_192_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S1079-2104(00)80022-0"
+      },
+      {
+        "key": "e_1_2_9_193_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/app8020172"
+      },
+      {
+        "key": "e_1_2_9_194_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ica.2015.07.003"
+      },
+      {
+        "key": "e_1_2_9_195_1",
+        "first-page": "3",
+        "article-title": "Kinetics analysis of electrophoretic deposition using small and large signal modeling: The case study of nano‐mullite suspension",
+        "volume": "4",
+        "author": "Shakeri M. S.",
+        "year": "2016",
+        "journal-title": "Journal of Advanced Materials and Processing"
+      },
+      {
+        "key": "e_1_2_9_196_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/nn300445d"
+      },
+      {
+        "key": "e_1_2_9_197_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1097/00007632-200301150-00008"
+      },
+      {
+        "key": "e_1_2_9_198_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1177/0885328217738006"
+      },
+      {
+        "key": "e_1_2_9_199_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/nn301714n"
+      },
+      {
+        "key": "e_1_2_9_200_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2017.07.078"
+      },
+      {
+        "key": "e_1_2_9_201_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C6RA15267H"
+      },
+      {
+        "key": "e_1_2_9_202_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbio.201400064"
+      },
+      {
+        "key": "e_1_2_9_203_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.apsusc.2010.03.124"
+      },
+      {
+        "key": "e_1_2_9_204_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.etap.2015.02.003"
+      },
+      {
+        "key": "e_1_2_9_205_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/jbm.a.36707"
+      },
+      {
+        "key": "e_1_2_9_206_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/cmdc.200600171"
+      },
+      {
+        "key": "e_1_2_9_207_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.jtemb.2017.05.002"
+      },
+      {
+        "key": "e_1_2_9_208_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1155/2013/465086"
+      },
+      {
+        "key": "e_1_2_9_209_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ijbiomac.2011.11.013"
+      },
+      {
+        "key": "e_1_2_9_210_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/S0140-6736(99)90247-7"
+      },
+      {
+        "key": "e_1_2_9_211_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.addr.2009.11.002"
+      },
+      {
+        "key": "e_1_2_9_212_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.arthro.2013.02.025"
+      },
+      {
+        "key": "e_1_2_9_213_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C5RA13556G"
+      },
+      {
+        "key": "e_1_2_9_214_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/btpr.2469"
+      },
+      {
+        "key": "e_1_2_9_215_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2013.08.009"
+      },
+      {
+        "key": "e_1_2_9_216_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2015.02.013"
+      },
+      {
+        "key": "e_1_2_9_217_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2012.09.021"
+      },
+      {
+        "key": "e_1_2_9_218_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/acsami.5b02893"
+      },
+      {
+        "key": "e_1_2_9_219_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2011.04.006"
+      },
+      {
+        "key": "e_1_2_9_220_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2009.09.021"
+      },
+      {
+        "key": "e_1_2_9_221_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1557/jmr.2015.243"
+      },
+      {
+        "key": "e_1_2_9_222_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1166/jbn.2012.1437"
+      },
+      {
+        "key": "e_1_2_9_223_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1002/marc.201800062"
+      },
+      {
+        "key": "e_1_2_9_224_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/b712179m"
+      },
+      {
+        "key": "e_1_2_9_225_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/0142-9612(96)85753-X"
+      },
+      {
+        "key": "e_1_2_9_226_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1088/0957-4484/24/39/395101"
+      },
+      {
+        "key": "e_1_2_9_227_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.actbio.2011.06.028"
+      },
+      {
+        "key": "e_1_2_9_228_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.carbon.2015.04.048"
+      },
+      {
+        "key": "e_1_2_9_229_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2012.09.066"
+      },
+      {
+        "key": "e_1_2_9_230_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/c3tb20261e"
+      },
+      {
+        "key": "e_1_2_9_231_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2018.12.120"
+      },
+      {
+        "key": "e_1_2_9_232_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C5NR01107H"
+      },
+      {
+        "key": "e_1_2_9_233_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/nl301934w"
+      },
+      {
+        "key": "e_1_2_9_234_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C5NR07023F"
+      },
+      {
+        "key": "e_1_2_9_235_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C6TB01282E"
+      },
+      {
+        "key": "e_1_2_9_236_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2147/IJN.S184396"
+      },
+      {
+        "key": "e_1_2_9_237_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.13005/ojc/310173"
+      },
+      {
+        "key": "e_1_2_9_238_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.surfcoat.2006.07.058"
+      },
+      {
+        "key": "e_1_2_9_239_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.apsusc.2014.07.027"
+      },
+      {
+        "key": "e_1_2_9_240_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2012.10.058"
+      },
+      {
+        "key": "e_1_2_9_241_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.matlet.2014.09.078"
+      },
+      {
+        "key": "e_1_2_9_242_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.polymertesting.2019.03.008"
+      },
+      {
+        "key": "e_1_2_9_243_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.bios.2017.08.018"
+      },
+      {
+        "key": "e_1_2_9_244_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.biomaterials.2011.03.053"
+      },
+      {
+        "key": "e_1_2_9_245_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/nn101373r"
+      },
+      {
+        "key": "e_1_2_9_246_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ceramint.2019.11.282"
+      },
+      {
+        "key": "e_1_2_9_247_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.3390/ijms13055554"
+      },
+      {
+        "key": "e_1_2_9_248_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1007/s12274-016-1265-9"
+      },
+      {
+        "key": "e_1_2_9_249_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2014.04.042"
+      },
+      {
+        "key": "e_1_2_9_250_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C4TB01063A"
+      },
+      {
+        "key": "e_1_2_9_251_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.watres.2012.01.015"
+      },
+      {
+        "key": "e_1_2_9_252_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.nano.2015.07.016"
+      },
+      {
+        "key": "e_1_2_9_253_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1038/ncomms10376"
+      },
+      {
+        "key": "e_1_2_9_254_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.2147/IJN.S21657"
+      },
+      {
+        "key": "e_1_2_9_255_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.ceramint.2013.01.094"
+      },
+      {
+        "key": "e_1_2_9_256_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1039/C6TB00390G"
+      },
+      {
+        "key": "e_1_2_9_257_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.colsurfb.2018.11.003"
+      },
+      {
+        "key": "e_1_2_9_258_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1016/j.msec.2019.109764"
+      },
+      {
+        "key": "e_1_2_9_259_1",
+        "doi-asserted-by": "publisher",
+        "DOI": "10.1021/acsbiomaterials.8b00986"
+      },
+      {
+        "key": "e_1_2_9_260_1",
+        "first-page": "475",
+        "article-title": "Role of prostaglandin E1 and copper in angiogenesis",
+        "volume": "69",
+        "author": "Ziche M.",
+        "year": "1982",
+        "journal-title": "Journal of the National Cancer Institute"
+      }
+    ],
+    "container-title": [
+      "Journal of Tissue Engineering and Regenerative Medicine"
+    ],
+    "original-title": [],
+    "language": "en",
+    "link": [
+      {
+        "URL": "https://onlinelibrary.wiley.com/doi/pdf/10.1002/term.3131",
+        "content-type": "application/pdf",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "https://onlinelibrary.wiley.com/doi/full-xml/10.1002/term.3131",
+        "content-type": "application/xml",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "https://onlinelibrary.wiley.com/doi/pdf/10.1002/term.3131",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "deposited": {
+      "date-parts": [
+        [
+          2020,
+          12,
+          24
+        ]
+      ],
+      "date-time": "2020-12-24T18:31:16Z",
+      "timestamp": 1608834676000
+    },
+    "score": 1,
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+      "date-parts": [
+        [
+          2020,
+          9,
+          30
+        ]
+      ]
+    },
+    "references-count": 259,
+    "journal-issue": {
+      "issue": "12",
+      "published-print": {
+        "date-parts": [
+          [
+            2020,
+            12
+          ]
+        ]
+      }
+    },
+    "alternative-id": [
+      "10.1002/term.3131"
+    ],
+    "URL": "http://dx.doi.org/10.1002/term.3131",
+    "archive": [
+      "Portico"
+    ],
+    "relation": {},
+    "ISSN": [
+      "1932-6254",
+      "1932-7005"
+    ],
+    "issn-type": [
+      {
+        "value": "1932-6254",
+        "type": "print"
+      },
+      {
+        "value": "1932-7005",
+        "type": "electronic"
+      }
+    ],
+    "subject": [
+      "Biomedical Engineering",
+      "Biomaterials",
+      "Medicine (miscellaneous)"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2020,
+          9,
+          30
+        ]
+      ]
+    },
+    "assertion": [
+      {
+        "value": "2020-03-27",
+        "order": 0,
+        "name": "received",
+        "label": "Received",
+        "group": {
+          "name": "publication_history",
+          "label": "Publication History"
+        }
+      },
+      {
+        "value": "2020-09-03",
+        "order": 1,
+        "name": "accepted",
+        "label": "Accepted",
+        "group": {
+          "name": "publication_history",
+          "label": "Publication History"
+        }
+      },
+      {
+        "value": "2020-09-30",
+        "order": 2,
+        "name": "published",
+        "label": "Published",
+        "group": {
+          "name": "publication_history",
+          "label": "Publication History"
+        }
+      }
+    ]
+  }
+}

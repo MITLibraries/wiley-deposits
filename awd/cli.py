@@ -158,6 +158,7 @@ def deposit(
             return  # Unable to read DynamoDB table, exit
         for doi in dois:
             article = Article(doi)
+
             # check status of DOI in extracted database items, adding/updating as needed
             if article.exists_in_database(database_items):
                 try:
@@ -187,13 +188,10 @@ def deposit(
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
             if crossref.is_valid_response(doi, crossref_response) is False:
                 continue
-            article.crossref_metadata = crossref.get_metadata_extract_from(
-                crossref_response.json()
-            )
+            article.crossref_metadata = crossref_response.json()
 
             # Create and validate DSpace metadata from Crossref metadata
-            article.dspace_metadata = crossref.create_dspace_metadata_from_dict(
-                article.crossref_metadata,
+            article.dspace_metadata = article.create_dspace_metadata(
                 "config/metadata_mapping.json",
             )
             if crossref.is_valid_dspace_metadata(article.dspace_metadata) is False:

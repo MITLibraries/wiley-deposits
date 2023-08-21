@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any
 
@@ -21,9 +22,9 @@ class Article:
         """
         self.doi: str = doi
         self.database_item = None
-        self.crossref_metadata: dict[str, Any] | None = None
-        self.dspace_metadata: dict[str, Any] | None = None
-        self.article_content: bytes | None = None
+        self.crossref_metadata: dict[str, Any]
+        self.dspace_metadata: dict[str, Any]
+        self.article_content: bytes
 
     def exists_in_database(self, database_items: list[dict[str, Any]]) -> bool:
         """Validate that a DOI is NOT in the database and needs to be added.
@@ -55,3 +56,66 @@ class Article:
             retry_status = True
             logger.debug("%s will be retried", self.doi)
         return retry_status
+
+    def create_dspace_metadata(self, metadata_mapping_path: str) -> dict[str, Any]:
+        """Create DSpace metadata from Crossref metadata and a metadata mapping file.
+
+        Args:
+            metadata_mapping_path: Path to a JSON metadata mapping file
+        """
+        keys_for_dspace = [
+            "author",
+            "container-title",
+            "ISSN",
+            "issue",
+            "issued",
+            "language",
+            "original-title",
+            "publisher",
+            "short-title",
+            "subtitle",
+            "title",
+            "URL",
+            "volume",
+        ]
+        with open(metadata_mapping_path) as metadata_mapping_file:
+            metadata_mapping = json.load(metadata_mapping_file)
+            work = self.crossref_metadata["message"]
+            metadata = []
+            for key in [k for k in work if k in keys_for_dspace]:
+                if key == "author":
+                    metadata.extend(
+                        [
+                            {
+                                "key": metadata_mapping[key],
+                                "value": f'{author.get("family")}, {author.get("given")}',
+                            }
+                            for author in work["author"]
+                        ]
+                    )
+                elif key == "title":
+                    metadata.append(
+                        {
+                            "key": metadata_mapping[key],
+                            "value": ". ".join(t for t in work[key]),
+                        }
+                    )
+                elif key == "issued":
+                    metadata.append(
+                        {
+                            "key": metadata_mapping[key],
+                            "value": "-".join(
+                                str(d).zfill(2) for d in work["issued"]["date-parts"][0]
+                            ),
+                        }
+                    )
+                elif isinstance(work[key], list):
+                    metadata.extend(
+                        [
+                            {"key": metadata_mapping[key], "value": list_item}
+                            for list_item in work[key]
+                        ]
+                    )
+                else:
+                    metadata.append({"key": metadata_mapping[key], "value": work[key]})
+            return {"metadata": metadata}

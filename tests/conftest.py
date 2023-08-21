@@ -131,7 +131,7 @@ def mocked_sqs():
 
 
 @pytest.fixture
-def mocked_web(crossref_work_record, wiley_pdf):
+def mocked_web(crossref_work_record_full, wiley_pdf):
     with requests_mock.Mocker() as m:
         request_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -155,11 +155,11 @@ def mocked_web(crossref_work_record, wiley_pdf):
         )
         m.get(
             "http://example.com/works/10.1002/term.3131?mailto=dspace-lib@mit.edu",
-            json=crossref_work_record,
+            json=crossref_work_record_full,
         )
         m.get(
             "http://example.com/works/10.1002/none.0000?mailto=dspace-lib@mit.edu",
-            json=crossref_work_record,
+            json=crossref_work_record_full,
         )
         m.get(
             "http://example.com/works/10.1002/nome.tadata?mailto=dspace-lib@mit.edu",
@@ -169,8 +169,14 @@ def mocked_web(crossref_work_record, wiley_pdf):
 
 
 @pytest.fixture
-def crossref_work_record():
-    with open("tests/fixtures/crossref_work_record.json") as work_record:
+def crossref_work_record_full():
+    with open("tests/fixtures/crossref_work_record_full.json") as work_record:
+        return json.loads(work_record.read())
+
+
+@pytest.fixture
+def crossref_work_record_minimum():
+    with open("tests/fixtures/crossref_work_record_minimum.json") as work_record:
         return json.loads(work_record.read())
 
 
@@ -190,12 +196,6 @@ def doi_list_pdf_unavailable():
 def doi_list_success():
     with open("tests/fixtures/doi_success.csv", "rb") as doi_list:
         return doi_list.read()
-
-
-@pytest.fixture
-def crossref_value_dict():
-    with open("tests/fixtures/crossref_value_dict.json") as value_dict:
-        return json.loads(value_dict.read())
 
 
 @pytest.fixture

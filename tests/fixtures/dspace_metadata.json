@@ -1,8 +1,20 @@
 {
   "metadata": [
     {
-      "key": "dc.contributor.author",
-      "value": "Eivazzadeh‐Keihan, Reza"
+      "key": "dc.publisher",
+      "value": "Wiley"
+    },
+    {
+      "key": "mit.journal.issue",
+      "value": "12"
+    },
+    {
+      "key": "dc.title",
+      "value": "Metal nanoparticles for bone tissue engineering"
+    },
+    {
+      "key": "mit.journal.volume",
+      "value": "14"
     },
     {
       "key": "dc.contributor.author",
@@ -53,40 +65,24 @@
       "value": "Journal of Tissue Engineering and Regenerative Medicine"
     },
     {
-      "key": "dc.identifier.issn",
-      "value": "1932-6254"
-    },
-    {
-      "key": "dc.identifier.issn",
-      "value": "1932-7005"
-    },
-    {
-      "key": "mit.journal.issue",
-      "value": "12"
+      "key": "dc.language",
+      "value": "en"
     },
     {
       "key": "dc.date.issued",
       "value": "2020-09-30"
     },
     {
-      "key": "dc.language",
-      "value": "en"
-    },
-    {
-      "key": "dc.publisher",
-      "value": "Wiley"
-    },
-    {
-      "key": "dc.title",
-      "value": "Metal nanoparticles for bone tissue engineering"
-    },
-    {
       "key": "dc.relation.isversionof",
       "value": "http://dx.doi.org/10.1002/term.3131"
     },
     {
-      "key": "mit.journal.volume",
-      "value": "14"
+      "key": "dc.identifier.issn",
+      "value": "1932-6254"
+    },
+    {
+      "key": "dc.identifier.issn",
+      "value": "1932-7005"
     }
   ]
 }

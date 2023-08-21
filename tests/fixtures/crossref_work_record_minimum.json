@@ -15,8 +15,6 @@
       "timestamp": 1626675893700
     },
     "reference-count": 259,
-    "publisher": "Wiley",
-    "issue": "12",
     "license": [
       {
         "start": {
@@ -89,165 +87,6 @@
       "Metal nanoparticles for bone tissue engineering"
     ],
     "prefix": "10.1002",
-    "volume": "14",
-    "author": [
-      {
-        "ORCID": "http://orcid.org/0000-0002-1998-9926",
-        "authenticated-orcid": false,
-        "given": "Reza",
-        "family": "Eivazzadeh‐Keihan",
-        "sequence": "first",
-        "affiliation": [
-          {
-            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0002-6706-4231",
-        "authenticated-orcid": false,
-        "given": "Ehsan",
-        "family": "Bahojb Noruzi",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Faculty of Chemistry, Department of Inorganic Chemistry University of Tabriz  Tabriz Iran"
-          },
-          {
-            "name": "Drug Applied Research Center Tabriz University of Medical Sciences  Tabriz Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0002-0119-0331",
-        "authenticated-orcid": false,
-        "given": "Karim",
-        "family": "Khanmohammadi Chenab",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0001-7604-688X",
-        "authenticated-orcid": false,
-        "given": "Amir",
-        "family": "Jafari",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Department of Medical Nanotechnology, Faculty of Advanced Technology in Medicine Iran University of Medical Sciences  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0003-0860-2236",
-        "authenticated-orcid": false,
-        "given": "Fateme",
-        "family": "Radinekiyan",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0001-5150-6405",
-        "authenticated-orcid": false,
-        "given": "Seyed Masoud",
-        "family": "Hashemi",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0002-0465-5771",
-        "authenticated-orcid": false,
-        "given": "Farnoush",
-        "family": "Ahmadpour",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0003-4719-6998",
-        "authenticated-orcid": false,
-        "given": "Ali",
-        "family": "Behboudi",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Faculty of Chemical, Petroleum and Gas Engineering Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0002-2897-0039",
-        "authenticated-orcid": false,
-        "given": "Jafar",
-        "family": "Mosafer",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Research Center of Advanced Technologies in Medicine Torbat Heydariyeh University of Medical Sciences  Torbat Heydariyeh Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0002-4515-8675",
-        "authenticated-orcid": false,
-        "given": "Ahad",
-        "family": "Mokhtarzadeh",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Immunology Research Center Tabriz University of Medical Sciences  Tabriz Iran"
-          },
-          {
-            "name": "Department of Biotechnology Higher Education Institute of Rab‐Rashid  Tabriz Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0001-5490-3350",
-        "authenticated-orcid": false,
-        "given": "Ali",
-        "family": "Maleki",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Catalysts and Organic Synthesis Research Laboratory, Department of Chemistry Iran University of Science and Technology  Tehran Iran"
-          }
-        ]
-      },
-      {
-        "ORCID": "http://orcid.org/0000-0001-6431-4605",
-        "authenticated-orcid": false,
-        "given": "Michael R.",
-        "family": "Hamblin",
-        "sequence": "additional",
-        "affiliation": [
-          {
-            "name": "Wellman Center for Photomedicine Massachusetts General Hospital  Boston Massachusetts USA"
-          },
-          {
-            "name": "Department of Dermatology Harvard Medical School  Boston Massachusetts USA"
-          },
-          {
-            "name": "Harvard‐MIT Division of Health Sciences and Technology  Cambridge Massachusetts USA"
-          }
-        ]
-      }
-    ],
     "member": "311",
     "published-online": {
       "date-parts": [
@@ -1599,11 +1438,7 @@
         "journal-title": "Journal of the National Cancer Institute"
       }
     ],
-    "container-title": [
-      "Journal of Tissue Engineering and Regenerative Medicine"
-    ],
     "original-title": [],
-    "language": "en",
     "link": [
       {
         "URL": "https://onlinelibrary.wiley.com/doi/pdf/10.1002/term.3131",
@@ -1638,15 +1473,6 @@
     "score": 1,
     "subtitle": [],
     "short-title": [],
-    "issued": {
-      "date-parts": [
-        [
-          2020,
-          9,
-          30
-        ]
-      ]
-    },
     "references-count": 259,
     "journal-issue": {
       "issue": "12",
@@ -1667,20 +1493,6 @@
       "Portico"
     ],
     "relation": {},
-    "ISSN": [
-      "1932-6254",
-      "1932-7005"
-    ],
-    "issn-type": [
-      {
-        "value": "1932-6254",
-        "type": "print"
-      },
-      {
-        "value": "1932-7005",
-        "type": "electronic"
-      }
-    ],
     "subject": [
       "Biomedical Engineering",
       "Biomaterials",

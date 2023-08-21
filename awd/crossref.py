@@ -1,4 +1,3 @@
-import json
 import logging
 from collections.abc import Iterator
 from typing import Any
@@ -27,62 +26,6 @@ def get_response_from_doi(url: str, doi: str) -> requests.Response:
     )
     logger.debug("Response code retrieved from Crossref for %s: %s", doi, response)
     return response
-
-
-def get_metadata_extract_from(work_record: dict[str, Any]) -> dict[str, Any]:
-    """Create metadata dict from a Crossref work JSON record."""
-    keys_for_dspace = [
-        "author",
-        "container-title",
-        "ISSN",
-        "issue",
-        "issued",
-        "language",
-        "original-title",
-        "publisher",
-        "short-title",
-        "subtitle",
-        "title",
-        "URL",
-        "volume",
-    ]
-    work = work_record["message"]
-    value_dict: dict[str, Any] = {}
-    for key in [k for k in work if k in keys_for_dspace]:
-        if key == "author":
-            authors = []
-            for author in work["author"]:
-                name = f'{author.get("family")}, {author.get("given")}'
-                authors.append(name)
-            value_dict[key] = authors
-        elif key == "title":
-            value_dict[key] = ". ".join(t for t in work[key])
-        elif key == "issued":
-            issued = "-".join(str(d).zfill(2) for d in work["issued"]["date-parts"][0])
-            value_dict[key] = issued
-        else:
-            value_dict[key] = work[key]
-    return value_dict
-
-
-def create_dspace_metadata_from_dict(
-    value_dict: dict[str, Any], metadata_mapping_path: str
-) -> dict[str, Any]:
-    """Create DSpace JSON metadata from metadata dict and a JSON metadata mapping file."""
-    with open(metadata_mapping_path) as metadata_mapping_file:
-        metadata_mapping = json.load(metadata_mapping_file)
-        metadata = []
-        for key in [k for k in metadata_mapping if k in value_dict]:
-            if isinstance(value_dict[key], list):
-                metadata.extend(
-                    [
-                        {"key": metadata_mapping[key], "value": list_item}
-                        for list_item in value_dict[key]
-                    ]
-                )
-            else:
-                metadata.append({"key": metadata_mapping[key], "value": value_dict[key]})
-        return {"metadata": metadata}
 
 
 def is_valid_dspace_metadata(dspace_metadata: dict[str, Any]) -> bool:
