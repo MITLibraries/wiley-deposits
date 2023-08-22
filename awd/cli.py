@@ -186,7 +186,7 @@ def deposit(
 
             # Retrieve and validate Crossref metadata
             crossref_response = crossref.get_response_from_doi(metadata_url, doi)
-            if crossref.is_valid_response(doi, crossref_response) is False:
+            if article.valid_crossref_metadata(crossref_response) is False:
                 continue
             article.crossref_metadata = crossref_response.json()
 

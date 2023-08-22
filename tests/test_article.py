@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from awd.article import Article
 from awd.status import Status
 
@@ -48,6 +50,20 @@ def test_create_dspace_metadata_full_metadata(
     sample_article.crossref_metadata = crossref_work_record_full
     metadata = sample_article.create_dspace_metadata("config/metadata_mapping.json")
     assert metadata == dspace_metadata
+
+
+def test_valid_crossref_metadata_failure(sample_article):
+    response = Mock()
+    response.json.return_value = {}
+    assert sample_article.valid_crossref_metadata(response) is False
+
+
+def test_valid_crossref_metadata_success(sample_article):
+    response = Mock()
+    response.json.return_value = {
+        "message": {"title": "Title", "URL": "http://example.com"}
+    }
+    assert sample_article.valid_crossref_metadata(response) is True
 
 
 def test_valid_dspace_metadata_success(sample_article):

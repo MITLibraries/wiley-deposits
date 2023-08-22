@@ -2,6 +2,8 @@ import json
 import logging
 from typing import Any
 
+from requests import Response
+
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
@@ -120,8 +122,30 @@ class Article:
                     metadata.append({"key": metadata_mapping[key], "value": work[key]})
             return {"metadata": metadata}
 
+    def valid_crossref_metadata(self, crossref_response: Response) -> bool:
+        """Validate that a Crossref work record contains sufficient metadata.
+
+        Args:
+            crossref_response: A response from Crossref to be validated.
+        """
+        valid = False
+        if work_record := crossref_response.json():
+            if (
+                work_record.get("message", {}).get("title") is not None
+                and work_record.get("message", {}).get("URL") is not None
+            ):
+                valid = True
+                logger.debug("Sufficient metadata downloaded for %s", self.doi)
+            else:
+                logger.exception(
+                    "Insufficient metadata for %s, missing title or URL", self.doi
+                )
+        else:
+            logger.exception("Unable to parse %s response as JSON", self.doi)
+        return valid
+
     def valid_dspace_metadata(self) -> bool:
-        """Validate that metadata follows the format expected by DSpace."""
+        """Validate that the dspace_metadata attribute follows the expected format."""
         approved_metadata_fields = [
             "dc.contributor.author",
             "dc.relation.journal",

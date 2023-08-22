@@ -25,20 +25,3 @@ def get_response_from_doi(url: str, doi: str) -> requests.Response:
     )
     logger.debug("Response code retrieved from Crossref for %s: %s", doi, response)
     return response
-
-
-def is_valid_response(doi: str, crossref_response: requests.Response) -> bool:
-    """Validate the Crossref work record contains sufficient metadata."""
-    validation_status = False
-    if work_record := crossref_response.json():
-        if (
-            work_record.get("message", {}).get("title") is not None
-            and work_record.get("message", {}).get("URL") is not None
-        ):
-            validation_status = True
-            logger.debug("Sufficient metadata downloaded for %s", doi)
-        else:
-            logger.exception("Insufficient metadata for %s, missing title or URL", doi)
-    else:
-        logger.exception("Unable to parse %s response as JSON", doi)
-    return validation_status

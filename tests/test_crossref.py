@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 from awd import crossref
 
 
@@ -15,19 +13,3 @@ def test_get_crossref_work_from_doi(mocked_web):
     )
     work = response.json()
     assert work["message"]["title"] == ["Metal nanoparticles for bone tissue engineering"]
-
-
-def test_is_valid_response_failure():
-    response = Mock()
-    response.json.return_value = {}
-    validation_status = crossref.is_valid_response("111.1/111", response)
-    assert validation_status is False
-
-
-def test_is_valid_response_success():
-    response = Mock()
-    response.json.return_value = {
-        "message": {"title": "Title", "URL": "http://example.com"}
-    }
-    validation_status = crossref.is_valid_response("111.1/111", response)
-    assert validation_status is True
