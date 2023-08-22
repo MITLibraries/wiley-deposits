@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+from requests import Response
+
 from awd.article import Article
 from awd.status import Status
 
@@ -79,3 +81,15 @@ def test_valid_dspace_metadata_no_metadata(sample_article):
 def test_valid_dspace_metadata_incorrect_fields(sample_article):
     sample_article.dspace_metadata = {"metadata": [{"key": "dc.example", "value": "123"}]}
     assert sample_article.valid_dspace_metadata() is False
+
+
+def test_valid_article_content_response_failure(sample_article):
+    wiley_response = Response()
+    wiley_response.headers = {"content-type": "application/html; charset=UTF-8"}
+    assert sample_article.valid_article_content_response(wiley_response) is False
+
+
+def test_valid_article_content_response_success(sample_article):
+    wiley_response = Response()
+    wiley_response.headers = {"content-type": "application/pdf; charset=UTF-8"}
+    assert sample_article.valid_article_content_response(wiley_response) is True

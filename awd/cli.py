@@ -199,14 +199,14 @@ def deposit(
 
             # Retrieve and validate PDF from Wiley server
             wiley_response = wiley.get_wiley_response(content_url, doi)
-            if wiley.is_valid_response(doi, wiley_response) is False:
+            if article.valid_article_content_response(wiley_response) is False:
                 continue
             article.article_content = wiley_response.content
+
+            # Upload DSpace metadata and PDF to S3 bucket
             doi_file_name = doi.replace(
                 "/", "-"
             )  # 10.1002/term.3131 to 10.1002-term.3131
-
-            # Upload DSpace metadata and PDF to S3 bucket
             try:
                 s3_client.put_file(
                     json.dumps(article.dspace_metadata), bucket, f"{doi_file_name}.json"

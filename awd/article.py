@@ -172,3 +172,22 @@ class Article:
         else:
             logger.exception("Invalid DSpace metadata created: %s ", self.dspace_metadata)
         return valid
+
+    def valid_article_content_response(self, wiley_response: Response) -> bool:
+        """Validate the Wiley response contained a PDF.
+
+        Args:
+           wiley_response: A response from wiley to be validated.
+        """
+        valid = False
+        if wiley_response.headers["content-type"] == "application/pdf; charset=UTF-8":
+            valid = True
+            logger.debug("PDF downloaded for %s", self.doi)
+        else:
+            logger.exception("A PDF could not be retrieved for DOI: %s", self.doi)
+            logger.debug(
+                "Response contents retrieved from Wiley server for %s: %s",
+                self.doi,
+                wiley_response.content,
+            )
+        return valid
