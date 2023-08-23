@@ -16,19 +16,3 @@ def get_wiley_response(url: str, doi: str) -> requests.Response:
     response = requests.get(f"{url}{doi}", headers=headers, timeout=30)
     logger.debug("Response code retrieved from Wiley server for %s: %s", doi, response)
     return response
-
-
-def is_valid_response(doi: str, wiley_response: requests.Response) -> bool:
-    """Validate the Wiley response contained a PDF."""
-    validation_status = False
-    if wiley_response.headers["content-type"] == "application/pdf; charset=UTF-8":
-        validation_status = True
-        logger.debug("PDF downloaded for %s", doi)
-    else:
-        logger.exception("A PDF could not be retrieved for DOI: %s", doi)
-        logger.debug(
-            "Response contents retrieved from Wiley server for %s: %s",
-            doi,
-            wiley_response.content,
-        )
-    return validation_status
