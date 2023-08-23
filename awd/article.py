@@ -4,7 +4,9 @@ from typing import Any
 
 from requests import Response
 
+from awd.crossref import get_response_from_doi
 from awd.status import Status
+from awd.wiley import get_wiley_response
 
 logger = logging.getLogger(__name__)
 
@@ -16,17 +18,26 @@ class Article:
     metadata and binary content for uploading to our DSpace repository.
     """
 
-    def __init__(self, doi: str) -> None:
+    def __init__(self, doi: str, metadata_url: str, content_url: str) -> None:
         """Initialize article instance.
 
         Args:
             doi: A digital object identifer (doi) for an article.
+            metadata_url: The URL for retrieving metadata records.
+            content_url: The URL for retrieving article content
         """
         self.doi: str = doi
+        self.metadata_url: str = metadata_url
+        self.content_url: str = content_url
         self.database_item = None
         self.crossref_metadata: dict[str, Any]
         self.dspace_metadata: dict[str, Any]
         self.article_content: bytes
+
+    def process(self) -> None:
+        self.get_and_validate_crossref_metadata()
+        self.create_and_validate_dspace_metadata()
+        self.get_and_validate_wiley_article_content()
 
     def exists_in_database(self, database_items: list[dict[str, Any]]) -> bool:
         """Validate that a DOI is NOT in the database and needs to be added.
@@ -144,7 +155,7 @@ class Article:
             logger.exception("Unable to parse %s response as JSON", self.doi)
         return valid
 
-    def valid_dspace_metadata(self) -> bool:
+    def valid_dspace_metadata(self, dspace_metadata: dict[str, Any]) -> bool:
         """Validate that the dspace_metadata attribute follows the expected format."""
         approved_metadata_fields = [
             "dc.contributor.author",
@@ -160,8 +171,8 @@ class Article:
             "mit.journal.volume",
         ]
         valid = False
-        if self.dspace_metadata.get("metadata") is not None:
-            for element in self.dspace_metadata["metadata"]:
+        if dspace_metadata.get("metadata") is not None:
+            for element in dspace_metadata["metadata"]:
                 if (
                     element.get("key") is not None
                     and element.get("value") is not None
@@ -170,7 +181,7 @@ class Article:
                     valid = True
             logger.debug("Valid DSpace metadata created")
         else:
-            logger.exception("Invalid DSpace metadata created: %s ", self.dspace_metadata)
+            logger.exception("Invalid DSpace metadata created: %s ", dspace_metadata)
         return valid
 
     def valid_article_content_response(self, wiley_response: Response) -> bool:
@@ -191,3 +202,38 @@ class Article:
                 wiley_response.content,
             )
         return valid
+
+    def get_and_validate_crossref_metadata(self) -> None:
+        """Get and validate metadata from Crossref API."""
+        crossref_response = get_response_from_doi(self.metadata_url, self.doi)
+        if self.valid_crossref_metadata(crossref_response) is False:
+            raise InvalidCrossrefMetadataError
+        self.crossref_metadata = crossref_response.json()
+
+    def create_and_validate_dspace_metadata(self) -> None:
+        """Create and validate DSpace metadata from Crossref metadata."""
+        dspace_metadata = self.create_dspace_metadata(
+            "config/metadata_mapping.json",
+        )
+        if self.valid_dspace_metadata(dspace_metadata) is False:
+            raise InvalidDSpaceMetadataError
+        self.dspace_metadata = dspace_metadata
+
+    def get_and_validate_wiley_article_content(self) -> None:
+        """Get and validate article content from Wiley server."""
+        wiley_response = get_wiley_response(self.content_url, self.doi)
+        if self.valid_article_content_response(wiley_response) is False:
+            raise InvalidArticleContentResponseError
+        self.article_content = wiley_response.content
+
+
+class InvalidCrossrefMetadataError(Exception):
+    pass
+
+
+class InvalidDSpaceMetadataError(Exception):
+    pass
+
+
+class InvalidArticleContentResponseError(Exception):
+    pass

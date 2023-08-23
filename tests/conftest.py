@@ -65,7 +65,11 @@ def test_aws_user():
 
 @pytest.fixture
 def sample_article():
-    return Article(doi="111.1/1111")
+    return Article(
+        doi="10.1002/term.3131",
+        metadata_url="http://example.com/works/",
+        content_url="http://example.com/doi/",
+    )
 
 
 @pytest.fixture

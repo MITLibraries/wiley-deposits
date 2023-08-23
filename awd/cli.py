@@ -7,8 +7,13 @@ import click
 import sentry_sdk
 from botocore.exceptions import ClientError
 
-from awd import config, crossref, dynamodb, s3, ses, sqs, wiley
-from awd.article import Article
+from awd import config, crossref, dynamodb, s3, ses, sqs
+from awd.article import (
+    Article,
+    InvalidArticleContentResponseError,
+    InvalidCrossrefMetadataError,
+    InvalidDSpaceMetadataError,
+)
 from awd.dynamodb import DynamoDB
 from awd.ses import SES
 from awd.sqs import SQS
@@ -156,8 +161,9 @@ def deposit(
         except ClientError as e:
             logger.exception("Table read failed: %s", e.response["Error"]["Message"])
             return  # Unable to read DynamoDB table, exit
+
         for doi in dois:
-            article = Article(doi)
+            article = Article(doi, metadata_url, content_url)
 
             # check status of DOI in extracted database items, adding/updating as needed
             if article.exists_in_database(database_items):
@@ -184,24 +190,14 @@ def deposit(
                     e.response["Error"]["Message"],
                 )
 
-            # Retrieve and validate Crossref metadata
-            crossref_response = crossref.get_response_from_doi(metadata_url, doi)
-            if article.valid_crossref_metadata(crossref_response) is False:
+            try:
+                article.process()
+            except (
+                InvalidArticleContentResponseError,
+                InvalidCrossrefMetadataError,
+                InvalidDSpaceMetadataError,
+            ):
                 continue
-            article.crossref_metadata = crossref_response.json()
-
-            # Create and validate DSpace metadata from Crossref metadata
-            article.dspace_metadata = article.create_dspace_metadata(
-                "config/metadata_mapping.json",
-            )
-            if article.valid_dspace_metadata() is False:
-                continue
-
-            # Retrieve and validate PDF from Wiley server
-            wiley_response = wiley.get_wiley_response(content_url, doi)
-            if article.valid_article_content_response(wiley_response) is False:
-                continue
-            article.article_content = wiley_response.content
 
             # Upload DSpace metadata and PDF to S3 bucket
             doi_file_name = doi.replace(
