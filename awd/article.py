@@ -5,6 +5,7 @@ from typing import Any
 from requests import Response
 
 from awd.crossref import get_response_from_doi
+from awd.doitable import DoiTable
 from awd.status import Status
 from awd.wiley import get_wiley_response
 
@@ -18,57 +19,68 @@ class Article:
     metadata and binary content for uploading to our DSpace repository.
     """
 
-    def __init__(self, doi: str, metadata_url: str, content_url: str) -> None:
+    def __init__(
+        self,
+        doi: str,
+        metadata_url: str,
+        content_url: str,
+        doi_table: DoiTable,
+        doi_table_items: list[DoiTable],
+    ) -> None:
         """Initialize article instance.
 
         Args:
             doi: A digital object identifer (doi) for an article.
             metadata_url: The URL for retrieving metadata records.
-            content_url: The URL for retrieving article content
+            content_url: The URL for retrieving article content.
+            doi_table: The DOI table as a PynamoDB object.
+            doi_table_items: A list of the DOI table items as PynamoDB objects.
         """
         self.doi: str = doi
         self.metadata_url: str = metadata_url
         self.content_url: str = content_url
-        self.database_item = None
+        self.doi_table: DoiTable = doi_table
+        self.doi_table_items: list[DoiTable] = doi_table_items
         self.crossref_metadata: dict[str, Any]
         self.dspace_metadata: dict[str, Any]
         self.article_content: bytes
 
     def process(self) -> None:
+        self.add_item_to_doi_table()
         self.get_and_validate_crossref_metadata()
         self.create_and_validate_dspace_metadata()
         self.get_and_validate_wiley_article_content()
 
-    def exists_in_database(self, database_items: list[dict[str, Any]]) -> bool:
-        """Validate that a DOI is NOT in the database and needs to be added.
+    def exists_in_doi_table(self) -> bool:
+        """Validate that a DOI is NOT in the DOI table and needs to be added.
 
         Args:
-            database_items: A list of database items that may or may not contain the
+            doi_table_items: A list of DOI table items that may or may not contain the
             specified DOI.
         """
         exists = False
-        if not any(doi_item["doi"] == self.doi for doi_item in database_items):
+        if any(doi_item.doi == self.doi for doi_item in self.doi_table_items):
             exists = True
-            logger.debug("%s added to database", self.doi)
+            logger.debug("%s added to DOI table", self.doi)
         return exists
 
-    def has_retry_status(self, database_items: list[dict[str, Any]]) -> bool:
-        """Validate that a DOI should be retried based on its status in the database.
+    def has_unprocessed_status(self) -> bool:
+        """Validate that a DOI should be retried based on its status in the DOI table.
 
         Args:
-            database_items: A list of database items containing the specified DOI, whose
+            doi_table_items: A list of DOI table items containing the specified DOI, whose
             status must be evaluated for whether the application should attempt to process
             it again.
         """
-        retry_status = False
+        unprocessed_status = False
         if any(
-            d
-            for d in database_items
-            if d["doi"] == self.doi and d["status"] == str(Status.UNPROCESSED.value)
+            doi_item
+            for doi_item in self.doi_table_items
+            if doi_item.doi == self.doi and doi_item.status == Status.UNPROCESSED.value
         ):
-            retry_status = True
+            unprocessed_status = True
             logger.debug("%s will be retried", self.doi)
-        return retry_status
+        return unprocessed_status
 
     def create_dspace_metadata(self, metadata_mapping_path: str) -> dict[str, Any]:
         """Create DSpace metadata from Crossref metadata and a metadata mapping file.
@@ -226,6 +238,20 @@ class Article:
             raise InvalidArticleContentResponseError
         self.article_content = wiley_response.content
 
+    def add_item_to_doi_table(
+        self,
+    ) -> None:
+        """Check if DOI should be added to table.
+
+        If not present, add the DOI to the table.  Check for unprocessed status
+        and raise exception if DOI should not be retried. Increment attempts field.
+        """
+        if not self.exists_in_doi_table():
+            self.doi_table.add_item(self.doi)
+        elif self.has_unprocessed_status() is False:
+            raise UnprocessedStatusFalseError
+        self.doi_table.increment_attempts(self.doi)
+
 
 class InvalidCrossrefMetadataError(Exception):
     pass
@@ -236,4 +262,8 @@ class InvalidDSpaceMetadataError(Exception):
 
 
 class InvalidArticleContentResponseError(Exception):
+    pass
+
+
+class UnprocessedStatusFalseError(Exception):
     pass

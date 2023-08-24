@@ -2,7 +2,6 @@ import logging
 from http import HTTPStatus
 
 from awd.cli import cli
-from awd.status import Status
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +276,7 @@ def test_deposit_dynamodb_error(
             ],
         )
         assert result.exit_code == 0
-        assert ("Table read failed: Requested resource not found") in caplog.text
+        assert ("Unable to read DynamoDB table") in caplog.text
 
 
 def test_listen_success(
@@ -286,7 +285,7 @@ def test_listen_success(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    dynamodb_client,
+    sample_doi_table,
     sqs_client,
     result_failure_message_attributes,
     result_success_message_attributes,
@@ -307,24 +306,8 @@ def test_listen_success(
             result_success_message_attributes,
             result_success_message_body,
         )
-        dynamodb_client.client.put_item(
-            TableName="test_dois",
-            Item={
-                "doi": {"S": "111.1/1111"},
-                "status": {"S": str(Status.UNPROCESSED.value)},
-                "attempts": {"S": "1"},
-                "last_modified": {"S": "'2022-01-28 09:28:53"},
-            },
-        )
-        dynamodb_client.client.put_item(
-            TableName="test_dois",
-            Item={
-                "doi": {"S": "222.2/2222"},
-                "status": {"S": str(Status.UNPROCESSED.value)},
-                "attempts": {"S": "1"},
-                "last_modified": {"S": "'2022-01-28 10:28:53"},
-            },
-        )
+        sample_doi_table.add_item("111.1/1111")
+        sample_doi_table.add_item("222.2/2222")
         result = runner.invoke(
             cli,
             [

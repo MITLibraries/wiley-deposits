@@ -1,37 +1,35 @@
 from unittest.mock import Mock
 
 import pytest
+from pynamodb.exceptions import DoesNotExist
 from requests import Response
 
 from awd.article import (
     InvalidArticleContentResponseError,
     InvalidCrossrefMetadataError,
     InvalidDSpaceMetadataError,
+    UnprocessedStatusFalseError,
 )
 from awd.status import Status
 
 
-def test_exists_in_database_true(sample_article):
-    sample_article.doi = ("222.2/2222",)
-    database_items = [{"doi": "111.1/1111"}]
-    assert sample_article.exists_in_database(database_items) is True
+def test_exists_in_doi_table_true(sample_article):
+    assert sample_article.exists_in_doi_table() is True
 
 
-def test_exists_in_database_false(sample_article):
-    database_items = [{"doi": "10.1002/term.3131"}]
-    assert sample_article.exists_in_database(database_items) is False
+def test_exists_in_doi_table_false(sample_article):
+    sample_article.doi = "222.2/2222"
+    assert sample_article.exists_in_doi_table() is False
 
 
-def test_has_retry_status_true(sample_article):
-    database_items = [
-        {"doi": "10.1002/term.3131", "status": str(Status.UNPROCESSED.value)}
-    ]
-    assert sample_article.has_retry_status(database_items) is True
+def test_has_unprocessed_status_true(sample_article):
+    assert sample_article.has_unprocessed_status() is True
 
 
-def test_has_retry_status_false(sample_article):
-    database_items = [{"doi": "111.1/1111", "status": str(Status.SUCCESS.value)}]
-    assert sample_article.has_retry_status(database_items) is False
+def test_has_unprocessed_status_false(sample_article, sample_doi_table_items):
+    sample_doi_table_items[0].status = Status.SUCCESS.value
+    sample_article.doi_table_items = sample_doi_table_items
+    assert sample_article.has_unprocessed_status() is False
 
 
 def test_create_dspace_metadata_minimum_metadata(
@@ -147,3 +145,20 @@ def test_get_and_validate_wiley_article_content_invalid_content_raises_error(
     sample_article.doi = "10.1002/none.0000"
     with pytest.raises(InvalidArticleContentResponseError):
         sample_article.get_and_validate_wiley_article_content()
+
+
+def test_add_item_to_doi_table_success(mocked_dynamodb, sample_doi_table, sample_article):
+    sample_article.doi = "10.1002/none.0000"
+    with pytest.raises(DoesNotExist):
+        sample_doi_table.get("10.1002/none.0000")
+    sample_article.add_item_to_doi_table()
+    assert sample_doi_table.get("10.1002/none.0000").attempts == 1
+
+
+def test_add_item_to_doi_table_unprocessed_status_false_raises_exception(
+    mocked_dynamodb, sample_doi_table, sample_article, sample_doi_table_items
+):
+    sample_doi_table_items[0].status = Status.SUCCESS.value
+    sample_article.doi_table_items = sample_doi_table_items
+    with pytest.raises(UnprocessedStatusFalseError):
+        sample_article.add_item_to_doi_table()
