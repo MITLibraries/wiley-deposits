@@ -13,7 +13,7 @@ from awd.status import Status
 logger = logging.getLogger(__name__)
 
 
-class DoiTable(Model):
+class DoiProcessAttempt(Model):
     """A class modeling the DynamoDB table."""
 
     class Meta:  # noqa: D106
@@ -30,7 +30,7 @@ class DoiTable(Model):
         Args:
             doi: The DOI to be added to the DOI table.
         """
-        response = DoiTable(
+        response = DoiProcessAttempt(
             doi=doi,
             attempts=0,
             last_modified=datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT),
@@ -48,7 +48,7 @@ class DoiTable(Model):
             made before setting the item to a failed status.
         """
         attempts_exceeded = False
-        item = DoiTable.get(doi)
+        item = DoiProcessAttempt.get(doi)
         if item.attempts >= retry_threshold:
             attempts_exceeded = True
         return attempts_exceeded
@@ -59,13 +59,13 @@ class DoiTable(Model):
         Args:
             doi: The DOI item to be updated in the DOI table.
         """
-        item = DoiTable.get(doi)
+        item = DoiProcessAttempt.get(doi)
         logger.debug("Response retrieved from DynamoDB table: %s", item)
         updated_attempts = item.attempts + 1
         response = item.update(
             actions=[
-                DoiTable.attempts.set(updated_attempts),
-                DoiTable.last_modified.set(
+                DoiProcessAttempt.attempts.set(updated_attempts),
+                DoiProcessAttempt.last_modified.set(
                     datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
                 ),
             ]
@@ -73,7 +73,7 @@ class DoiTable(Model):
         logger.debug("%s attempts updated to: %s", doi, updated_attempts)
         return response
 
-    def retrieve_items(self) -> list[DoiTable]:
+    def retrieve_items(self) -> list[DoiProcessAttempt]:
         """Retrieve DOI table items as a list."""
         return list(self.scan())
 
@@ -92,12 +92,12 @@ class DoiTable(Model):
             doi: The DOI to be updated in the DOI table.
             status_code: The status code to be set for the item.
         """
-        item = DoiTable.get(doi)
+        item = DoiProcessAttempt.get(doi)
         logger.debug("Response retrieved from DynamoDB table: %s", item)
         response = item.update(
             actions=[
-                DoiTable.status.set(status_code),
-                DoiTable.last_modified.set(
+                DoiProcessAttempt.status.set(status_code),
+                DoiProcessAttempt.last_modified.set(
                     datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
                 ),
             ]

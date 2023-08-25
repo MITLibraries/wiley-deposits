@@ -10,7 +10,7 @@ from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 
 from awd import config
 from awd.article import Article
-from awd.doitable import DoiTable
+from awd.database import DoiProcessAttempt
 from awd.s3 import S3
 from awd.ses import SES
 from awd.sqs import SQS
@@ -78,7 +78,7 @@ def sample_article(sample_doi_table, sample_doi_table_items):
 @pytest.fixture
 @freeze_time("2023-08-21")
 def sample_doi_table(mocked_dynamodb):
-    doi_table = DoiTable()
+    doi_table = DoiProcessAttempt()
     doi_table.set_table_name("test_dois")
     doi_table.add_item("10.1002/term.3131")
     return doi_table

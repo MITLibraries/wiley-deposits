@@ -16,7 +16,7 @@ from awd.article import (
     InvalidDSpaceMetadataError,
     UnprocessedStatusFalseError,
 )
-from awd.doitable import DoiTable
+from awd.database import DoiProcessAttempt
 from awd.ses import SES
 from awd.sqs import SQS
 from awd.status import Status
@@ -156,7 +156,7 @@ def deposit(
 
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
-        doi_table = DoiTable()
+        doi_table = DoiProcessAttempt()
         doi_table.set_table_name(ctx.obj["doi_table"])
         try:
             doi_table_items = doi_table.retrieve_items()
@@ -263,7 +263,7 @@ def listen(
     stream = ctx.obj["stream"]
     sqs = SQS(ctx.obj["aws_region"])
 
-    doi_table = DoiTable()
+    doi_table = DoiProcessAttempt()
     doi_table.set_table_name(ctx.obj["doi_table"])
 
     try:
