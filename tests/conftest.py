@@ -65,29 +65,21 @@ def test_aws_user():
 
 
 @pytest.fixture
-def sample_article(sample_doi_table, sample_doi_table_items):
+def sample_article(sample_doiprocessattempt):
     return Article(
         doi="10.1002/term.3131",
         metadata_url="http://example.com/works/",
         content_url="http://example.com/doi/",
-        doi_table=sample_doi_table,
-        doi_table_items=sample_doi_table_items,
+        doi_table=sample_doiprocessattempt,
     )
 
 
 @pytest.fixture
 @freeze_time("2023-08-21")
-def sample_doi_table(mocked_dynamodb):
+def sample_doiprocessattempt(mocked_dynamodb):
     doi_table = DoiProcessAttempt()
-    doi_table.set_table_name("test_dois")
     doi_table.add_item("10.1002/term.3131")
     return doi_table
-
-
-@pytest.fixture
-@freeze_time("2023-08-21")
-def sample_doi_table_items(sample_doi_table):
-    return sample_doi_table.retrieve_items()
 
 
 @pytest.fixture
@@ -111,7 +103,24 @@ def mocked_dynamodb():
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
         dynamodb.create_table(
             BillingMode="PAY_PER_REQUEST",
-            TableName="test_dois",
+            TableName="wiley-test",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
+        yield dynamodb
+
+
+@pytest.fixture
+def mocked_invalid_dynamodb():
+    with mock_dynamodb():
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            BillingMode="PAY_PER_REQUEST",
+            TableName="not-a-table",
             KeySchema=[
                 {"AttributeName": "doi", "KeyType": "HASH"},
             ],

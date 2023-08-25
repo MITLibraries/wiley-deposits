@@ -31,8 +31,6 @@ def test_deposit_success(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -96,8 +94,6 @@ def test_deposit_insufficient_metadata(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -151,8 +147,6 @@ def test_deposit_pdf_unavailable(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -197,8 +191,6 @@ def test_deposit_s3_nonexistent_bucket(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -207,8 +199,6 @@ def test_deposit_s3_nonexistent_bucket(
                 "noreply@example.com",
                 "--log_recipient_email",
                 "mock@mock.mock",
-                "--doi_table",
-                "test_dois",
                 "deposit",
                 "--metadata_url",
                 "http://example.com/works/",
@@ -232,14 +222,14 @@ def test_deposit_dynamodb_error(
     caplog,
     doi_list_success,
     mocked_web,
-    mocked_dynamodb,
+    mocked_invalid_dynamodb,
     mocked_s3,
     mocked_ses,
     mocked_sqs,
     s3_client,
     runner,
 ):
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.INFO):
         s3_client.put_file(
             doi_list_success,
             "awd",
@@ -250,8 +240,6 @@ def test_deposit_dynamodb_error(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -260,8 +248,6 @@ def test_deposit_dynamodb_error(
                 "noreply@example.com",
                 "--log_recipient_email",
                 "mock@mock.mock",
-                "--doi_table",
-                "not-a-table",
                 "deposit",
                 "--metadata_url",
                 "http://example.com/works/",
@@ -285,7 +271,7 @@ def test_listen_success(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    sample_doi_table,
+    sample_doiprocessattempt,
     sqs_client,
     result_failure_message_attributes,
     result_success_message_attributes,
@@ -306,19 +292,15 @@ def test_listen_success(
             result_success_message_attributes,
             result_success_message_body,
         )
-        sample_doi_table.add_item("111.1/1111")
-        sample_doi_table.add_item("222.2/2222")
+        sample_doiprocessattempt.add_item("111.1/1111")
+        sample_doiprocessattempt.add_item("222.2/2222")
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
-                "--doi_table",
-                "test_dois",
                 "--sqs_output_queue",
                 "mock-output-queue",
                 "--log_source_email",
@@ -341,19 +323,15 @@ def test_listen_success(
         assert "Logs sent to" in caplog.text
 
 
-def test_listen_failure(caplog, mocked_ses, mocked_sqs, runner):
+def test_listen_failure(caplog, mocked_dynamodb, mocked_ses, mocked_sqs, runner):
     with caplog.at_level(logging.DEBUG):
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
-                "test_dois",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
-                "--doi_table",
-                "test_dois",
                 "--sqs_output_queue",
                 "non-existent",
                 "--log_source_email",

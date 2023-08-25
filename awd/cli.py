@@ -6,7 +6,7 @@ import logging
 import click
 import sentry_sdk
 from botocore.exceptions import ClientError
-from pynamodb.exceptions import ScanError
+from pynamodb.exceptions import GetError
 
 from awd import config, crossref, s3, ses, sqs
 from awd.article import (
@@ -14,9 +14,8 @@ from awd.article import (
     InvalidArticleContentResponseError,
     InvalidCrossrefMetadataError,
     InvalidDSpaceMetadataError,
-    UnprocessedStatusFalseError,
 )
-from awd.database import DoiProcessAttempt
+from awd.database import DoiProcessAttempt, UnprocessedStatusFalseError
 from awd.ses import SES
 from awd.sqs import SQS
 from awd.status import Status
@@ -36,12 +35,6 @@ logger = logging.getLogger(__name__)
     required=True,
     default=config.LOG_LEVEL,
     help="The log level to use.",
-)
-@click.option(
-    "--doi_table",
-    required=True,
-    default=config.DOI_TABLE,
-    help="The DynamoDB table containing the state of DOIs in the workflow.",
 )
 @click.option(
     "--sqs_base_url",
@@ -72,7 +65,6 @@ def cli(
     ctx: click.Context,
     aws_region: str,
     log_level: str,
-    doi_table: str,
     sqs_base_url: str,
     sqs_output_queue: str,
     log_source_email: str,
@@ -90,7 +82,6 @@ def cli(
     ctx.ensure_object(dict)
     ctx.obj["stream"] = stream
     ctx.obj["aws_region"] = aws_region
-    ctx.obj["doi_table"] = doi_table
     ctx.obj["sqs_base_url"] = sqs_base_url
     ctx.obj["sqs_output_queue"] = sqs_output_queue
     ctx.obj["log_source_email"] = log_source_email
@@ -152,27 +143,29 @@ def deposit(
         logger.exception(
             "Error accessing bucket: %s, %s", bucket, e.response["Error"]["Message"]
         )
-        return  # Unable to access S3 bucket, exit
+        return  # Unable to access S3 bucket, exit application
+
+    doi_table = DoiProcessAttempt()
+    if not doi_table.exists():
+        logger.exception("Unable to read DynamoDB table")
+        return  # exit application
 
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
-        doi_table = DoiProcessAttempt()
-        doi_table.set_table_name(ctx.obj["doi_table"])
-        try:
-            doi_table_items = doi_table.retrieve_items()
-        except ScanError:
-            logger.exception("Unable to read DynamoDB table")
-            return  # exit
+
         for doi in dois:
-            article = Article(doi, metadata_url, content_url, doi_table, doi_table_items)
+            article = Article(doi, metadata_url, content_url, doi_table)
+
             try:
                 article.process()
             except (
+                GetError,
                 InvalidArticleContentResponseError,
                 InvalidCrossrefMetadataError,
                 InvalidDSpaceMetadataError,
                 UnprocessedStatusFalseError,
             ):
+                logger.exception(article.doi)
                 continue
 
             # Upload DSpace metadata and PDF to S3 bucket
@@ -264,7 +257,6 @@ def listen(
     sqs = SQS(ctx.obj["aws_region"])
 
     doi_table = DoiProcessAttempt()
-    doi_table.set_table_name(ctx.obj["doi_table"])
 
     try:
         for sqs_message in sqs.receive(

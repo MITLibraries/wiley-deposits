@@ -6,7 +6,6 @@ from requests import Response
 
 from awd.crossref import get_response_from_doi
 from awd.database import DoiProcessAttempt
-from awd.status import Status
 from awd.wiley import get_wiley_response
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,6 @@ class Article:
         metadata_url: str,
         content_url: str,
         doi_table: DoiProcessAttempt,
-        doi_table_items: list[DoiProcessAttempt],
     ) -> None:
         """Initialize article instance.
 
@@ -34,57 +32,21 @@ class Article:
             metadata_url: The URL for retrieving metadata records.
             content_url: The URL for retrieving article content.
             doi_table: The DOI table as a PynamoDB object.
-            doi_table_items: A list of the DOI table items as PynamoDB objects.
         """
         self.doi: str = doi
         self.metadata_url: str = metadata_url
         self.content_url: str = content_url
         self.doi_table: DoiProcessAttempt = doi_table
-        self.doi_table_items: list[DoiProcessAttempt] = doi_table_items
         self.crossref_metadata: dict[str, Any]
         self.dspace_metadata: dict[str, Any]
         self.article_content: bytes
 
     def process(self) -> None:
         """Run the complete article processing workflow."""
-        self.add_item_to_doi_table()
+        self.doi_table.check_doi_and_add_to_table(self.doi)
         self.get_and_validate_crossref_metadata()
         self.create_and_validate_dspace_metadata()
         self.get_and_validate_wiley_article_content()
-
-    def exists_in_doi_table(self) -> bool:
-        """Validate that a DOI is NOT in the DOI table and needs to be added."""
-        exists = False
-        if any(doi_item.doi == self.doi for doi_item in self.doi_table_items):
-            exists = True
-            logger.debug("%s added to DOI table", self.doi)
-        return exists
-
-    def has_unprocessed_status(self) -> bool:
-        """Validate that a DOI has unprocessed status in the DOI table."""
-        unprocessed_status = False
-        if any(
-            doi_item
-            for doi_item in self.doi_table_items
-            if doi_item.doi == self.doi and doi_item.status == Status.UNPROCESSED.value
-        ):
-            unprocessed_status = True
-            logger.debug("%s will be retried", self.doi)
-        return unprocessed_status
-
-    def add_item_to_doi_table(
-        self,
-    ) -> None:
-        """Check if DOI should be added to table.
-
-        If not present, add the DOI to the table.  Check for unprocessed status
-        and raise exception if DOI should not be retried. Increment attempts field.
-        """
-        if not self.exists_in_doi_table():
-            self.doi_table.add_item(self.doi)
-        elif self.has_unprocessed_status() is False:
-            raise UnprocessedStatusFalseError
-        self.doi_table.increment_attempts(self.doi)
 
     def valid_crossref_metadata(self, crossref_response: Response) -> bool:
         """Validate that a Crossref work record contains sufficient metadata.
@@ -256,8 +218,4 @@ class InvalidDSpaceMetadataError(Exception):
 
 
 class InvalidArticleContentResponseError(Exception):
-    pass
-
-
-class UnprocessedStatusFalseError(Exception):
     pass

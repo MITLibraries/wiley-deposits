@@ -11,7 +11,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 if ENV == "test":
     LOG_LEVEL: str | None = "INFO"
-    DOI_TABLE: str | None = "test_dois"
+    DOI_TABLE: str | None = "wiley-test"
     METADATA_URL: str | None = "http://example.com/works/"
     CONTENT_URL: str | None = "http://example.com/doi/"
     BUCKET: str | None = "awd"
