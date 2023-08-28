@@ -2,7 +2,6 @@ import logging
 from http import HTTPStatus
 
 from awd.cli import cli
-from awd.status import Status
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ def test_deposit_success(
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -98,7 +97,7 @@ def test_deposit_insufficient_metadata(
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -153,7 +152,7 @@ def test_deposit_pdf_unavailable(
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -199,7 +198,7 @@ def test_deposit_s3_nonexistent_bucket(
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -209,7 +208,7 @@ def test_deposit_s3_nonexistent_bucket(
                 "--log_recipient_email",
                 "mock@mock.mock",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "deposit",
                 "--metadata_url",
                 "http://example.com/works/",
@@ -240,7 +239,7 @@ def test_deposit_dynamodb_error(
     s3_client,
     runner,
 ):
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.INFO):
         s3_client.put_file(
             doi_list_success,
             "awd",
@@ -252,7 +251,7 @@ def test_deposit_dynamodb_error(
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--sqs_output_queue",
@@ -277,7 +276,7 @@ def test_deposit_dynamodb_error(
             ],
         )
         assert result.exit_code == 0
-        assert ("Table read failed: Requested resource not found") in caplog.text
+        assert ("Unable to read DynamoDB table") in caplog.text
 
 
 def test_listen_success(
@@ -286,7 +285,7 @@ def test_listen_success(
     mocked_s3,
     mocked_ses,
     mocked_sqs,
-    dynamodb_client,
+    sample_doiprocessattempt,
     sqs_client,
     result_failure_message_attributes,
     result_success_message_attributes,
@@ -307,35 +306,19 @@ def test_listen_success(
             result_success_message_attributes,
             result_success_message_body,
         )
-        dynamodb_client.client.put_item(
-            TableName="test_dois",
-            Item={
-                "doi": {"S": "111.1/1111"},
-                "status": {"S": str(Status.UNPROCESSED.value)},
-                "attempts": {"S": "1"},
-                "last_modified": {"S": "'2022-01-28 09:28:53"},
-            },
-        )
-        dynamodb_client.client.put_item(
-            TableName="test_dois",
-            Item={
-                "doi": {"S": "222.2/2222"},
-                "status": {"S": str(Status.UNPROCESSED.value)},
-                "attempts": {"S": "1"},
-                "last_modified": {"S": "'2022-01-28 10:28:53"},
-            },
-        )
+        sample_doiprocessattempt.add_item("111.1/1111")
+        sample_doiprocessattempt.add_item("222.2/2222")
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_output_queue",
                 "mock-output-queue",
                 "--log_source_email",
@@ -358,7 +341,7 @@ def test_listen_success(
         assert "Logs sent to" in caplog.text
 
 
-def test_listen_failure(caplog, mocked_ses, mocked_sqs, runner):
+def test_listen_failure(caplog, mocked_dynamodb, mocked_ses, mocked_sqs, runner):
     with caplog.at_level(logging.DEBUG):
         result = runner.invoke(
             cli,
@@ -366,11 +349,11 @@ def test_listen_failure(caplog, mocked_ses, mocked_sqs, runner):
                 "--log_level",
                 "INFO",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
                 "--doi_table",
-                "test_dois",
+                "wiley-test",
                 "--sqs_output_queue",
                 "non-existent",
                 "--log_source_email",

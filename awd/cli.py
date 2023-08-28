@@ -6,15 +6,16 @@ import logging
 import click
 import sentry_sdk
 from botocore.exceptions import ClientError
+from pynamodb.exceptions import GetError
 
-from awd import config, crossref, dynamodb, s3, ses, sqs
+from awd import config, crossref, s3, ses, sqs
 from awd.article import (
     Article,
     InvalidArticleContentResponseError,
     InvalidCrossrefMetadataError,
     InvalidDSpaceMetadataError,
 )
-from awd.dynamodb import DynamoDB
+from awd.database import DoiProcessAttempt, UnprocessedStatusFalseError
 from awd.ses import SES
 from awd.sqs import SQS
 from awd.status import Status
@@ -143,7 +144,6 @@ def deposit(
     stream = ctx.obj["stream"]
     s3_client = s3.S3()
     sqs_client = sqs.SQS(ctx.obj["aws_region"])
-    dynamodb_client = dynamodb.DynamoDB(ctx.obj["aws_region"])
 
     try:
         s3_client.client.list_objects_v2(Bucket=bucket)
@@ -151,52 +151,30 @@ def deposit(
         logger.exception(
             "Error accessing bucket: %s, %s", bucket, e.response["Error"]["Message"]
         )
-        return  # Unable to access S3 bucket, exit
+        return  # Unable to access S3 bucket, exit application
+
+    doi_table = DoiProcessAttempt()
+    doi_table.set_table_name(ctx.obj["doi_table"])
+    if not doi_table.exists():
+        logger.exception("Unable to read DynamoDB table")
+        return  # exit application
+
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
         dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
-        try:
-            database_items = dynamodb_client.retrieve_doi_items_from_database(
-                ctx.obj["doi_table"]
-            )
-        except ClientError as e:
-            logger.exception("Table read failed: %s", e.response["Error"]["Message"])
-            return  # Unable to read DynamoDB table, exit
 
         for doi in dois:
-            article = Article(doi, metadata_url, content_url)
-
-            # check status of DOI in extracted database items, adding/updating as needed
-            if article.exists_in_database(database_items):
-                try:
-                    dynamodb_client.add_doi_item_to_database(ctx.obj["doi_table"], doi)
-                except ClientError as e:
-                    logger.exception(
-                        "Table error while processing %s: %s",
-                        doi,
-                        e.response["Error"]["Message"],
-                    )
-            elif article.has_retry_status(database_items) is False:
-                continue
-            try:
-                dynamodb_client.update_doi_item_attempts_in_database(
-                    ctx.obj["doi_table"], doi
-                )
-            except KeyError:
-                logger.exception("Key error in table while processing %s", doi)
-            except ClientError as e:
-                logger.exception(
-                    "Table error while processing %s: %s",
-                    doi,
-                    e.response["Error"]["Message"],
-                )
+            article = Article(doi, metadata_url, content_url, doi_table)
 
             try:
                 article.process()
             except (
+                GetError,
                 InvalidArticleContentResponseError,
                 InvalidCrossrefMetadataError,
                 InvalidDSpaceMetadataError,
+                UnprocessedStatusFalseError,
             ):
+                logger.exception(article.doi)
                 continue
 
             # Upload DSpace metadata and PDF to S3 bucket
@@ -240,9 +218,7 @@ def deposit(
 
             # Update article status in DynamoDB
             try:
-                dynamodb_client.update_doi_item_status_in_database(
-                    ctx.obj["doi_table"], doi, Status.MESSAGE_SENT.value
-                )
+                doi_table.update_status(doi, Status.MESSAGE_SENT.value)
             except KeyError:
                 logger.exception("Key error in table while processing %s", doi)
             except ClientError as e:
@@ -282,13 +258,16 @@ def deposit(
 @click.pass_context
 def listen(
     ctx: click.Context,
-    retry_threshold: int,
+    retry_threshold: str,
 ) -> None:
     """Retrieve messages from an SQS queue and email the results to stakeholders."""
     date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
     sqs = SQS(ctx.obj["aws_region"])
-    dynamodb_client = DynamoDB(ctx.obj["aws_region"])
+
+    doi_table = DoiProcessAttempt()
+    doi_table.set_table_name(ctx.obj["doi_table"])
+
     try:
         for sqs_message in sqs.receive(
             ctx.obj["sqs_base_url"], ctx.obj["sqs_output_queue"]
@@ -313,16 +292,10 @@ def listen(
                     sqs_message["ReceiptHandle"],
                 )
                 try:
-                    if dynamodb_client.attempts_exceeded(
-                        ctx.obj["doi_table"], doi, retry_threshold
-                    ):
-                        dynamodb_client.update_doi_item_status_in_database(
-                            ctx.obj["doi_table"], doi, Status.FAILED.value
-                        )
+                    if doi_table.attempts_exceeded(doi, int(retry_threshold)):
+                        doi_table.update_status(doi, Status.FAILED.value)
                     else:
-                        dynamodb_client.update_doi_item_status_in_database(
-                            ctx.obj["doi_table"], doi, Status.UNPROCESSED.value
-                        )
+                        doi_table.update_status(doi, Status.UNPROCESSED.value)
                 except KeyError:
                     logger.exception(
                         "Key error in table while processing %s",
@@ -342,9 +315,7 @@ def listen(
                     sqs_message["ReceiptHandle"],
                 )
                 try:
-                    dynamodb_client.update_doi_item_status_in_database(
-                        ctx.obj["doi_table"], doi, Status.SUCCESS.value
-                    )
+                    doi_table.update_status(doi, Status.SUCCESS.value)
                 except KeyError:
                     logger.exception(
                         "Key error in table while processing %s",

@@ -5,11 +5,12 @@ import boto3
 import pytest
 import requests_mock
 from click.testing import CliRunner
+from freezegun import freeze_time
 from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 
 from awd import config
 from awd.article import Article
-from awd.dynamodb import DynamoDB
+from awd.database import DoiProcessAttempt
 from awd.s3 import S3
 from awd.ses import SES
 from awd.sqs import SQS
@@ -64,17 +65,22 @@ def test_aws_user():
 
 
 @pytest.fixture
-def sample_article():
+def sample_article(sample_doiprocessattempt):
     return Article(
         doi="10.1002/term.3131",
         metadata_url="http://example.com/works/",
         content_url="http://example.com/doi/",
+        doi_table=sample_doiprocessattempt,
     )
 
 
 @pytest.fixture
-def dynamodb_client():
-    return DynamoDB(config.AWS_REGION_NAME)
+@freeze_time("2023-08-21")
+def sample_doiprocessattempt(mocked_dynamodb):
+    doi_table = DoiProcessAttempt()
+    doi_table.set_table_name("wiley-test")
+    doi_table.add_item("10.1002/term.3131")
+    return doi_table
 
 
 @pytest.fixture
@@ -98,7 +104,24 @@ def mocked_dynamodb():
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
         dynamodb.create_table(
             BillingMode="PAY_PER_REQUEST",
-            TableName="test_dois",
+            TableName="wiley-test",
+            KeySchema=[
+                {"AttributeName": "doi", "KeyType": "HASH"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "doi", "AttributeType": "S"},
+            ],
+        )
+        yield dynamodb
+
+
+@pytest.fixture
+def mocked_invalid_dynamodb():
+    with mock_dynamodb():
+        dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            BillingMode="PAY_PER_REQUEST",
+            TableName="not-a-table",
             KeySchema=[
                 {"AttributeName": "doi", "KeyType": "HASH"},
             ],
@@ -225,7 +248,7 @@ def result_failure_message_attributes():
 @pytest.fixture
 def result_success_message_attributes():
     return {
-        "PackageID": {"DataType": "String", "StringValue": "111.1/1111"},
+        "PackageID": {"DataType": "String", "StringValue": "10.1002/term.3131"},
         "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
     }
 
