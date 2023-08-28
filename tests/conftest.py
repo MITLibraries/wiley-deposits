@@ -78,6 +78,7 @@ def sample_article(sample_doiprocessattempt):
 @freeze_time("2023-08-21")
 def sample_doiprocessattempt(mocked_dynamodb):
     doi_table = DoiProcessAttempt()
+    doi_table.set_table_name("wiley-test")
     doi_table.add_item("10.1002/term.3131")
     return doi_table
 

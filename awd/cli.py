@@ -37,6 +37,12 @@ logger = logging.getLogger(__name__)
     help="The log level to use.",
 )
 @click.option(
+    "--doi_table",
+    required=True,
+    default=config.DOI_TABLE,
+    help="The DynamoDB table containing the state of DOIs in the workflow.",
+)
+@click.option(
     "--sqs_base_url",
     required=True,
     default=config.SQS_BASE_URL,
@@ -65,6 +71,7 @@ def cli(
     ctx: click.Context,
     aws_region: str,
     log_level: str,
+    doi_table: str,
     sqs_base_url: str,
     sqs_output_queue: str,
     log_source_email: str,
@@ -82,6 +89,7 @@ def cli(
     ctx.ensure_object(dict)
     ctx.obj["stream"] = stream
     ctx.obj["aws_region"] = aws_region
+    ctx.obj["doi_table"] = doi_table
     ctx.obj["sqs_base_url"] = sqs_base_url
     ctx.obj["sqs_output_queue"] = sqs_output_queue
     ctx.obj["log_source_email"] = log_source_email
@@ -146,6 +154,7 @@ def deposit(
         return  # Unable to access S3 bucket, exit application
 
     doi_table = DoiProcessAttempt()
+    doi_table.set_table_name(ctx.obj["doi_table"])
     if not doi_table.exists():
         logger.exception("Unable to read DynamoDB table")
         return  # exit application
@@ -257,6 +266,7 @@ def listen(
     sqs = SQS(ctx.obj["aws_region"])
 
     doi_table = DoiProcessAttempt()
+    doi_table.set_table_name(ctx.obj["doi_table"])
 
     try:
         for sqs_message in sqs.receive(

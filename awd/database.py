@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import logging
-import os
 from typing import Any
 
 from pynamodb.attributes import NumberAttribute, UnicodeAttribute
@@ -19,7 +18,7 @@ class DoiProcessAttempt(Model):
     """A class modeling an item in the DynamoDB table."""
 
     class Meta:  # noqa: D106
-        table_name = f"wiley-{os.getenv('WORKSPACE')}"
+        table_name = "None"
 
     doi = UnicodeAttribute(hash_key=True)
     attempts = NumberAttribute()
@@ -98,6 +97,14 @@ class DoiProcessAttempt(Model):
         )
         logger.debug("%s attempts updated to: %s", doi, updated_attempts)
         return response
+
+    def set_table_name(self, table_name: str) -> None:
+        """Set table_name attribute.
+
+        Args:
+            table_name: The name of the DynamoDB table.
+        """
+        self.Meta.table_name = table_name
 
     @classmethod
     def update_status(cls, doi: str, status_code: int) -> None:
