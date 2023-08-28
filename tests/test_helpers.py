@@ -1,3 +1,4 @@
+import logging
 from email.mime.multipart import MIMEMultipart
 from http import HTTPStatus
 
@@ -76,13 +77,25 @@ def test_ses_create_email(ses_client):
 
 
 def test_ses_send_email(mocked_ses, ses_client):
-    message = message = MIMEMultipart()
+    message = MIMEMultipart()
     response = ses_client.send_email(
         "noreply@example.com",
         "test@example.com",
         message,
     )
     assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
+
+
+def test_ses_create_and_send_email(caplog, mocked_ses, ses_client):
+    with caplog.at_level(logging.DEBUG):
+        ses_client.create_and_send_email(
+            subject="Email subject",
+            attachment_content="<html/>",
+            attachment_name="attachment",
+            source_email_address="noreply@example.com",
+            recipient_email_address="test@example.com",
+        )
+        assert "Logs sent to test@example.com" in caplog.text
 
 
 def test_sqs_create_dss_message_attributes(sqs_client, submission_message_attributes):

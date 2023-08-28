@@ -105,16 +105,32 @@ class SES:
         return message
 
     def send_email(
-        self, source_email: str, recipient_email_address: str, message: MIMEMultipart
+        self,
+        source_email_address: str,
+        recipient_email_address: str,
+        message: MIMEMultipart,
     ) -> SendRawEmailResponseTypeDef:
         """Send email via SES."""
         return self.client.send_raw_email(
-            Source=source_email,
+            Source=source_email_address,
             Destinations=[recipient_email_address],
             RawMessage={
                 "Data": message.as_string(),
             },
         )
+
+    def create_and_send_email(
+        self,
+        subject: str,
+        attachment_content: str,
+        attachment_name: str,
+        source_email_address: str,
+        recipient_email_address: str,
+    ) -> None:
+        """Create an email message and send it via SES."""
+        message = self.create_email(subject, attachment_content, attachment_name)
+        self.send_email(source_email_address, recipient_email_address, message)
+        logger.debug("Logs sent to %s", recipient_email_address)
 
 
 class SQS:

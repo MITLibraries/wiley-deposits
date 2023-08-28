@@ -193,18 +193,15 @@ def deposit(
 
     # Send logs as email via SES
     ses_client = SES(ctx.obj["aws_region"])
-    email_message = ses_client.create_email(
-        f"Automated Wiley deposit errors {date}",
-        stream.getvalue(),
-        f"{date}_submission_log.txt",
-    )
+
     try:
-        ses_client.send_email(
-            ctx.obj["log_source_email"],
-            ctx.obj["log_recipient_email"],
-            email_message,
+        ses_client.create_and_send_email(
+            subject=f"Automated Wiley deposit errors {date}",
+            attachment_content=stream.getvalue(),
+            attachment_name=f"{date}_submission_log.txt",
+            source_email_address=ctx.obj["log_source_email"],
+            recipient_email_address=ctx.obj["log_recipient_email"],
         )
-        logger.debug("Logs sent to %s", ctx.obj["log_recipient_email"])
     except ClientError as e:
         logger.exception("Failed to send logs: %s", e.response["Error"]["Message"])
 
