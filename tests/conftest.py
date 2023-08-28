@@ -11,9 +11,7 @@ from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 from awd import config
 from awd.article import Article
 from awd.database import DoiProcessAttempt
-from awd.s3 import S3
-from awd.ses import SES
-from awd.sqs import SQS
+from awd.helpers import S3, SES, SQS
 
 
 @pytest.fixture
@@ -71,6 +69,13 @@ def sample_article(sample_doiprocessattempt):
         metadata_url="http://example.com/works/",
         content_url="http://example.com/doi/",
         doi_table=sample_doiprocessattempt,
+        s3_client=s3_client,
+        bucket="awd",
+        sqs_client=sqs_client,
+        sqs_base_url="https://queue.amazonaws.com/123456789012/",
+        sqs_input_queue="mock-input-queue",
+        sqs_output_queue="mock-output-queue",
+        collection_handle="123.4/5678",
     )
 
 

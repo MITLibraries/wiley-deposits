@@ -8,7 +8,7 @@ import sentry_sdk
 from botocore.exceptions import ClientError
 from pynamodb.exceptions import GetError
 
-from awd import config, crossref, s3, ses, sqs
+from awd import config
 from awd.article import (
     Article,
     InvalidArticleContentResponseError,
@@ -16,8 +16,7 @@ from awd.article import (
     InvalidDSpaceMetadataError,
 )
 from awd.database import DoiProcessAttempt, UnprocessedStatusFalseError
-from awd.ses import SES
-from awd.sqs import SQS
+from awd.helpers import S3, SES, SQS, get_dois_from_spreadsheet
 from awd.status import Status
 
 logger = logging.getLogger(__name__)
@@ -142,8 +141,8 @@ def deposit(
     """
     date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
-    s3_client = s3.S3()
-    sqs_client = sqs.SQS(ctx.obj["aws_region"])
+    s3_client = S3()
+    sqs_client = SQS(ctx.obj["aws_region"])
 
     try:
         s3_client.client.list_objects_v2(Bucket=bucket)
@@ -160,14 +159,26 @@ def deposit(
         return  # exit application
 
     for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
-        dois = crossref.get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
+        dois = get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
 
         for doi in dois:
-            article = Article(doi, metadata_url, content_url, doi_table)
-
+            article = Article(
+                doi,
+                metadata_url,
+                content_url,
+                doi_table,
+                s3_client,
+                bucket,
+                sqs_client,
+                ctx.obj["sqs_base_url"],
+                sqs_input_queue,
+                ctx.obj["sqs_output_queue"],
+                collection_handle,
+            )
             try:
                 article.process()
             except (
+                ClientError,
                 GetError,
                 InvalidArticleContentResponseError,
                 InvalidCrossrefMetadataError,
@@ -177,73 +188,20 @@ def deposit(
                 logger.exception(article.doi)
                 continue
 
-            # Upload DSpace metadata and PDF to S3 bucket
-            doi_file_name = doi.replace(
-                "/", "-"
-            )  # 10.1002/term.3131 to 10.1002-term.3131
-            try:
-                s3_client.put_file(
-                    json.dumps(article.dspace_metadata), bucket, f"{doi_file_name}.json"
-                )
-                s3_client.put_file(
-                    article.article_content, bucket, f"{doi_file_name}.pdf"
-                )
-            except ClientError as e:
-                logger.exception(
-                    "Upload failed for  %s: %s",
-                    doi_file_name,
-                    e.response["Error"]["Message"],
-                )
-                continue
-
-            # Send message to SQS queue for processing by dspace-submission-service
-            bitstream_s3_uri = f"s3://{bucket}/{doi_file_name}.pdf"
-            metadata_s3_uri = f"s3://{bucket}/{doi_file_name}.json"
-            dss_message_attributes = sqs.create_dss_message_attributes(
-                doi, "wiley", ctx.obj["sqs_output_queue"]
-            )
-            dss_message_body = sqs.create_dss_message_body(
-                "DSpace@MIT",
-                collection_handle,
-                metadata_s3_uri,
-                f"{doi_file_name}.pdf",
-                bitstream_s3_uri,
-            )
-            sqs_client.send(
-                ctx.obj["sqs_base_url"],
-                sqs_input_queue,
-                dss_message_attributes,
-                dss_message_body,
-            )
-
-            # Update article status in DynamoDB
-            try:
-                doi_table.update_status(doi, Status.MESSAGE_SENT.value)
-            except KeyError:
-                logger.exception("Key error in table while processing %s", doi)
-            except ClientError as e:
-                logger.exception(
-                    "Table error while processing %s: %s",
-                    doi,
-                    e.response["Error"]["Message"],
-                )
         s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
     logger.debug("Submission process has completed")
 
     # Send logs as email via SES
-    ses_client = ses.SES(ctx.obj["aws_region"])
-    email_message = ses_client.create_email(
-        f"Automated Wiley deposit errors {date}",
-        stream.getvalue(),
-        f"{date}_submission_log.txt",
-    )
+    ses_client = SES(ctx.obj["aws_region"])
+
     try:
-        ses_client.send_email(
-            ctx.obj["log_source_email"],
-            ctx.obj["log_recipient_email"],
-            email_message,
+        ses_client.create_and_send_email(
+            subject=f"Automated Wiley deposit errors {date}",
+            attachment_content=stream.getvalue(),
+            attachment_name=f"{date}_submission_log.txt",
+            source_email_address=ctx.obj["log_source_email"],
+            recipient_email_address=ctx.obj["log_recipient_email"],
         )
-        logger.debug("Logs sent to %s", ctx.obj["log_recipient_email"])
     except ClientError as e:
         logger.exception("Failed to send logs: %s", e.response["Error"]["Message"])
 
