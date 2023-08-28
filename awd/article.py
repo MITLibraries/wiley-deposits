@@ -4,9 +4,9 @@ from typing import Any
 
 from requests import Response
 
-from awd.crossref import get_response_from_doi
 from awd.database import DoiProcessAttempt
-from awd.wiley import get_wiley_response
+from awd.helpers import S3, SQS, get_crossref_response_from_doi, get_wiley_response
+from awd.status import Status
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,13 @@ class Article:
         metadata_url: str,
         content_url: str,
         doi_table: DoiProcessAttempt,
+        s3_client: S3,
+        bucket: str,
+        sqs_client: SQS,
+        sqs_base_url: str,
+        sqs_input_queue: str,
+        sqs_output_queue: str,
+        collection_handle: str,
     ) -> None:
         """Initialize article instance.
 
@@ -32,11 +39,26 @@ class Article:
             metadata_url: The URL for retrieving metadata records.
             content_url: The URL for retrieving article content.
             doi_table: The DOI table as a PynamoDB object.
+            s3_client: A configured S3 client.
+            bucket: The S3 bucket for uploading metadata and article content.
+            sqs_client: A configured SQS client.
+            sqs_base_url: The SQS base URL to use. Enables easier unit testing.
+            sqs_input_queue: The SQS input queue to use.
+            sqs_output_queue: The SQS output queue to use.
+            collection_handle: The handle of the DSpace collection to which items
+            will be uploaded.
         """
         self.doi: str = doi
         self.metadata_url: str = metadata_url
         self.content_url: str = content_url
         self.doi_table: DoiProcessAttempt = doi_table
+        self.s3_client: S3 = s3_client
+        self.bucket: str = bucket
+        self.sqs_client: SQS = sqs_client
+        self.sqs_base_url: str = sqs_base_url
+        self.sqs_input_queue: str = sqs_input_queue
+        self.sqs_output_queue: str = sqs_output_queue
+        self.collection_handle: str = collection_handle
         self.crossref_metadata: dict[str, Any]
         self.dspace_metadata: dict[str, Any]
         self.article_content: bytes
@@ -47,6 +69,7 @@ class Article:
         self.get_and_validate_crossref_metadata()
         self.create_and_validate_dspace_metadata()
         self.get_and_validate_wiley_article_content()
+        self.upload_files_and_send_sqs_message()
 
     def valid_crossref_metadata(self, crossref_response: Response) -> bool:
         """Validate that a Crossref work record contains sufficient metadata.
@@ -72,7 +95,7 @@ class Article:
 
     def get_and_validate_crossref_metadata(self) -> None:
         """Get and validate metadata from Crossref API."""
-        crossref_response = get_response_from_doi(self.metadata_url, self.doi)
+        crossref_response = get_crossref_response_from_doi(self.metadata_url, self.doi)
         if self.valid_crossref_metadata(crossref_response) is False:
             raise InvalidCrossrefMetadataError
         self.crossref_metadata = crossref_response.json()
@@ -207,6 +230,45 @@ class Article:
         if self.valid_article_content_response(wiley_response) is False:
             raise InvalidArticleContentResponseError
         self.article_content = wiley_response.content
+
+    def upload_files_and_send_sqs_message(
+        self,
+    ) -> None:
+        """Upload files to S3 bucket and send SQS message with the resulting S3 URIs."""
+        doi_file_name = self.doi.replace("/", "-")  # 10.12/term.3131 to 10.12-term.3131
+
+        self.s3_client.put_file(
+            file=json.dumps(self.dspace_metadata),
+            bucket=self.bucket,
+            key=f"{doi_file_name}.json",
+        )
+        self.s3_client.put_file(
+            file=self.article_content, bucket=self.bucket, key=f"{doi_file_name}.pdf"
+        )
+
+        s3_uri_prefix = f"s3://{self.bucket}/{doi_file_name}"
+
+        dss_message_attributes = self.sqs_client.create_dss_message_attributes(
+            package_id=self.doi,
+            submission_source="wiley",
+            output_queue=self.sqs_output_queue,
+        )
+        dss_message_body = self.sqs_client.create_dss_message_body(
+            submission_system="DSpace@MIT",
+            collection_handle=self.collection_handle,
+            metadata_s3_uri=f"{s3_uri_prefix}.json",
+            bitstream_file_name=f"{doi_file_name}.pdf",
+            bitstream_s3_uri=f"{s3_uri_prefix}.pdf",
+        )
+
+        self.sqs_client.send(
+            sqs_base_url=self.sqs_base_url,
+            queue_name=self.sqs_input_queue,
+            message_attributes=dss_message_attributes,
+            message_body=dss_message_body,
+        )
+
+        self.doi_table.update_status(self.doi, Status.MESSAGE_SENT.value)
 
 
 class InvalidCrossrefMetadataError(Exception):

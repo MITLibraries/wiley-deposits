@@ -30,7 +30,7 @@ def test_check_doi_and_add_to_table_success(
     assert sample_doiprocessattempt.get("10.1002/none.0000").attempts == 1
 
 
-def test_add_item_to_doi_table_unprocessed_status_false_raises_exception(
+def test_check_doi_and_add_to_table_unprocessed_status_false_raises_exception(
     mocked_dynamodb,
     sample_doiprocessattempt,
 ):
