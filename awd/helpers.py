@@ -10,6 +10,8 @@ import requests
 import smart_open
 from boto3 import client
 
+from awd.status import Status
+
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
@@ -22,6 +24,8 @@ if TYPE_CHECKING:
         SendMessageResultTypeDef,
     )
 
+    from awd.database import DoiProcessAttempt
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +35,7 @@ WILEY_HEADERS = {
 }
 
 
-class S3:
+class S3ArticleProcessClient:
     """An S3 class that provides a generic boto3 s3 client.
 
     Includes specific S3 functionality necessary for Wiley deposits.
@@ -40,25 +44,16 @@ class S3:
     def __init__(self) -> None:
         self.client = client("s3")
 
-    def filter_files_in_bucket(
-        self, bucket: str, file_type: str, excluded_prefix: str
-    ) -> Iterator[str]:
-        """Retrieve file based on file extension, bucket, and without excluded prefix."""
-        paginator = self.client.get_paginator("list_objects_v2")
-        pages = paginator.paginate(Bucket=bucket)
-        for s3_object in [
-            s3_object
-            for page in pages
-            for s3_object in page["Contents"]
-            if s3_object["Key"].endswith(file_type)
-            and excluded_prefix not in s3_object["Key"]
-        ]:
-            yield s3_object["Key"]
-
     def archive_file_with_new_key(
         self, bucket: str, key: str, archived_key_prefix: str
     ) -> None:
-        """Update the key of the specified file to archive it from processing."""
+        """Update the key of the specified file to archive it from processing.
+
+        Args:
+            bucket: The S3 bucket containing the files to be archived.
+            key: The key of the file to archive.
+            archived_key_prefix: The prefix to be applied to the archived file.
+        """
         self.client.copy_object(
             Bucket=bucket,
             CopySource=f"{bucket}/{key}",
@@ -70,19 +65,46 @@ class S3:
         )
 
     def put_file(
-        self, file: str | bytes, bucket: str, key: str
+        self, file_content: str | bytes, bucket: str, key: str
     ) -> PutObjectOutputTypeDef:
-        """Put a file in a specified S3 bucket with a specified key."""
+        """Put a file in a specified S3 bucket with a specified key.
+
+        Args:
+            file_content: The content of the file to be uploaded.
+            bucket: The S3 bucket where the file will be uploaded.
+            key: The key to be used for the uploaded file.
+        """
         response = self.client.put_object(
-            Body=file,
+            Body=file_content,
             Bucket=bucket,
             Key=key,
         )
         logger.debug("%s uploaded to S3", key)
         return response
 
+    def retrieve_file_type_from_bucket(
+        self, bucket: str, file_type: str, excluded_key_prefix: str
+    ) -> Iterator[str]:
+        """Retrieve file based on file type, bucket, and without excluded prefix.
 
-class SES:
+        Args:
+            bucket: The S3 bucket to search.
+            file_type: The file type to retrieve.
+            excluded_key_prefix: Files with this key prefix will not be retrieved.
+        """
+        paginator = self.client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket)
+        for s3_object in [
+            s3_object
+            for page in pages
+            for s3_object in page["Contents"]
+            if s3_object["Key"].endswith(file_type)
+            and excluded_key_prefix not in s3_object["Key"]
+        ]:
+            yield s3_object["Key"]
+
+
+class SESArticleProcessClient:
     """An SES class that provides a generic boto3 SES client."""
 
     def __init__(self, region: str) -> None:
@@ -94,7 +116,13 @@ class SES:
         attachment_content: str,
         attachment_name: str,
     ) -> MIMEMultipart:
-        """Create an email."""
+        """Create an email.
+
+        Args:
+            subject: The subject of the email.
+            attachment_content: The content of the email attachment.
+            attachment_name: The name of the email attachment.
+        """
         message = MIMEMultipart()
         message["Subject"] = subject
         attachment_object = MIMEApplication(attachment_content)
@@ -110,7 +138,13 @@ class SES:
         recipient_email_address: str,
         message: MIMEMultipart,
     ) -> SendRawEmailResponseTypeDef:
-        """Send email via SES."""
+        """Send email via SES.
+
+        Args:
+            source_email_address: The email address of the sender.
+            recipient_email_address: The email address of the receipient.
+            message: The message to be sent.
+        """
         return self.client.send_raw_email(
             Source=source_email_address,
             Destinations=[recipient_email_address],
@@ -127,23 +161,39 @@ class SES:
         source_email_address: str,
         recipient_email_address: str,
     ) -> None:
-        """Create an email message and send it via SES."""
+        """Create an email message and send it via SES.
+
+        Args:
+           subject: The subject of the email.
+           attachment_content: The content of the email attachment.
+           attachment_name: The name of the email attachment.
+           source_email_address: The email address of the sender.
+           recipient_email_address: The email address of the receipient.
+        """
         message = self.create_email(subject, attachment_content, attachment_name)
         self.send_email(source_email_address, recipient_email_address, message)
         logger.debug("Logs sent to %s", recipient_email_address)
 
 
-class SQS:
+class SQSArticleProcessClient:
     """An SQS class that provides a generic boto3 SQS client."""
 
-    def __init__(self, region: str) -> None:
+    def __init__(self, region: str, base_url: str, queue_name: str) -> None:
         self.client = client("sqs", region_name=region)
+        self.base_url: str = base_url
+        self.queue_name: str = queue_name
 
     @staticmethod
     def create_dss_message_attributes(
         package_id: str, submission_source: str, output_queue: str
     ) -> dict[str, Any]:
-        """Create attributes for a DSpace Submission Service message."""
+        """Create attributes for a DSpace Submission Service message.
+
+        Args:
+            package_id: The PackageID field which is populated by the DOI.
+            submission_source: The submission source, "wiley" for this application.
+            output_queue: The SQS output queue used for retrieving result messages.
+        """
         return {
             "PackageID": {"DataType": "String", "StringValue": package_id},
             "SubmissionSource": {"DataType": "String", "StringValue": submission_source},
@@ -158,7 +208,16 @@ class SQS:
         bitstream_file_name: str,
         bitstream_s3_uri: str,
     ) -> str:
-        """Create body for a DSpace Submission Service message."""
+        """Create body for a DSpace Submission Service message.
+
+        Args:
+        submission_system: The system where the article is uploaded.
+        collection_handle: The handle of collection where the article is uploaded.
+        metadata_s3_uri: The S3 URI for the metadata JSON file.
+        bitstream_file_name: The file name for the article content which is uploaded as a
+        bitstream.
+        bitstream_s3_uri: The S3 URI for the article content file.
+        """
         return json.dumps(
             {
                 "SubmissionSystem": submission_system,
@@ -174,29 +233,125 @@ class SQS:
             }
         )
 
-    def delete(
-        self, sqs_base_url: str, queue_name: str, receipt_handle: str
-    ) -> EmptyResponseMetadataTypeDef:
-        """Delete message from SQS queue."""
-        logger.debug("Deleting %s from SQS queue: %s", receipt_handle, queue_name)
+    def delete(self, receipt_handle: str) -> EmptyResponseMetadataTypeDef:
+        """Delete message from SQS queue.
+
+        Args:
+            receipt_handle: The receipt handle of the message to be deleted.
+        """
+        logger.debug("Deleting %s from SQS queue: %s", receipt_handle, self.queue_name)
         response = self.client.delete_message(
-            QueueUrl=f"{sqs_base_url}{queue_name}",
+            QueueUrl=f"{self.base_url}{self.queue_name}",
             ReceiptHandle=receipt_handle,
         )
         logger.debug("Message deleted from SQS queue: %s", response)
         return response
 
+    def process_result_message(
+        self,
+        sqs_message: MessageTypeDef,
+        doi_process_attempt: DoiProcessAttempt,
+        retry_threshold: str,
+    ) -> None:
+        """Validate and then process an SQS result message based on content.
+
+        Args:
+            sqs_message: An SQS result message to be processed.
+            doi_process_attempt: A database item represented as a PynamoDB object.
+            retry_threshold: The number of times to attempt processing an article.
+        """
+        if (
+            self.valid_result_message_attributes(sqs_message=sqs_message)
+            and self.valid_result_message_body(sqs_message=sqs_message)
+            and sqs_message.get("ReceiptHandle")
+        ):
+            doi = sqs_message["MessageAttributes"]["PackageID"]["StringValue"]
+            message_body = json.loads(str(sqs_message["Body"]))
+            receipt_handle = sqs_message["ReceiptHandle"]
+            if message_body["ResultType"] == "error":
+                self.error_message(
+                    doi=doi,
+                    message_body=message_body,
+                    receipt_handle=receipt_handle,
+                    doi_process_attempt=doi_process_attempt,
+                    retry_threshold=retry_threshold,
+                )
+            else:
+                self.success_message(
+                    doi=doi,
+                    message_body=message_body,
+                    receipt_handle=receipt_handle,
+                    doi_process_attempt=doi_process_attempt,
+                )
+        else:
+            raise InvalidSQSMessageError
+
+    def error_message(
+        self,
+        doi: str,
+        message_body: str,
+        receipt_handle: str,
+        doi_process_attempt: DoiProcessAttempt,
+        retry_threshold: str,
+    ) -> None:
+        """Process an error result message.
+
+        Args:
+            doi: The DOI of the article.
+            message_body: The body of the SQS result message.
+            receipt_handle: The receipt handle of the SQS result message.
+            doi_process_attempt: A database item represented as a PynamoDB object.
+            retry_threshold: The number of times to attempt processing an article.
+        """
+        logger.exception("DOI: %s, Result: %s", doi, message_body)
+        self.delete(receipt_handle)
+        if doi_process_attempt.attempts_exceeded(
+            doi=doi, retry_threshold=int(retry_threshold)
+        ):
+            doi_process_attempt.update_status(doi=doi, status_code=Status.FAILED.value)
+            logger.exception(
+                "DOI: '%s' has exceeded the retry threshold and will not be "
+                "attempted again.",
+                doi,
+            )
+        else:
+            doi_process_attempt.update_status(
+                doi=doi, status_code=Status.UNPROCESSED.value
+            )
+
+    def success_message(
+        self,
+        doi: str,
+        message_body: str,
+        receipt_handle: str,
+        doi_process_attempt: DoiProcessAttempt,
+    ) -> None:
+        """Process an success result message.
+
+        Args:
+            doi: The DOI of the Article.
+            message_body: The body of the SQS result message.
+            receipt_handle: The receipt handle of the SQS result message.
+            doi_process_attempt: A database item represented as a PynamoDB object.
+        """
+        logger.info("DOI: %s, Result: %s", doi, message_body)
+        self.delete(receipt_handle)
+        doi_process_attempt.update_status(doi=doi, status_code=Status.SUCCESS.value)
+
     def send(
         self,
-        sqs_base_url: str,
-        queue_name: str,
         message_attributes: Mapping[str, MessageAttributeValueTypeDef],
         message_body: str,
     ) -> SendMessageResultTypeDef:
-        """Send message via SQS."""
-        logger.debug("Sending message to SQS queue: %s", queue_name)
+        """Send message via SQS.
+
+        Args:
+            message_attributes: The attributes of the message to send.
+            message_body: The body of the message to send.
+        """
+        logger.debug("Sending message to SQS queue: %s", self.queue_name)
         response = self.client.send_message(
-            QueueUrl=f"{sqs_base_url}{queue_name}",
+            QueueUrl=f"{self.base_url}{self.queue_name}",
             MessageAttributes=message_attributes,
             MessageBody=str(message_body),
         )
@@ -205,36 +360,81 @@ class SQS:
 
     def receive(
         self,
-        sqs_base_url: str,
-        queue_name: str,
     ) -> Iterator[MessageTypeDef]:
-        """Receive message via SQS."""
-        logger.debug("Receiving messages from SQS queue: %s", queue_name)
+        """Receive messages from SQS queue."""
+        logger.debug("Receiving messages from SQS queue: %s", self.queue_name)
         while True:
             response = self.client.receive_message(
-                QueueUrl=f"{sqs_base_url}{queue_name}",
+                QueueUrl=f"{self.base_url}{self.queue_name}",
                 MaxNumberOfMessages=10,
                 MessageAttributeNames=["All"],
             )
             if "Messages" in response:
                 for message in response["Messages"]:
                     logger.debug(
-                        "Message retrieved from SQS queue %s: %s", queue_name, message
+                        "Message retrieved from SQS queue %s: %s",
+                        self.queue_name,
+                        message,
                     )
                     yield message
             else:
-                logger.debug("No more messages from SQS queue: %s", queue_name)
+                logger.debug("No more messages from SQS queue: %s", self.queue_name)
                 break
 
+    @staticmethod
+    def valid_result_message_attributes(sqs_message: MessageTypeDef) -> bool:
+        """Validate that "MessageAttributes" field is formatted as expected.
 
-def get_dois_from_spreadsheet(file: str) -> Iterator[str]:
-    """Retriev DOIs from the Wiley-provided CSV file."""
-    with smart_open.open(file, encoding="utf-8-sig") as csvfile:
+        Args:
+            sqs_message: An SQS message to be evaluated.
+        """
+        valid = False
+        if (
+            "MessageAttributes" in sqs_message
+            and any(
+                field
+                for field in sqs_message["MessageAttributes"]
+                if "PackageID" in field
+            )
+            and sqs_message["MessageAttributes"]["PackageID"].get("StringValue")
+        ):
+            valid = True
+        else:
+            logger.exception("Failed to parse SQS message attributes: %s", sqs_message)
+        return valid
+
+    @staticmethod
+    def valid_result_message_body(sqs_message: MessageTypeDef) -> bool:
+        """Validate that "Body" field is formatted as expected.
+
+        Args:
+            sqs_message: An SQS message to be evaluated.
+        """
+        valid = False
+        if "Body" in sqs_message and json.loads(str(sqs_message["Body"])):
+            valid = True
+        else:
+            logger.exception("Failed to parse SQS message body: %s", sqs_message)
+        return valid
+
+
+def get_dois_from_spreadsheet(doi_csv_file: str) -> Iterator[str]:
+    """Retriev DOIs from the Wiley-provided CSV file.
+
+    Args:
+        doi_csv_file: A CSV file provided by Wiley with DOIs for articles to be processed.
+    """
+    with smart_open.open(doi_csv_file, encoding="utf-8-sig") as csvfile:
         yield from csvfile.read().splitlines()
 
 
 def get_crossref_response_from_doi(url: str, doi: str) -> requests.Response:
-    """Retrieve Crossref response containing work record based on a DOI."""
+    """Retrieve Crossref response containing work record based on a DOI.
+
+    Args:
+        url: The URL used to request metadata responses.
+        doi: The DOI used to request metadata.
+    """
     logger.debug("Requesting metadata for %s%s", url, doi)
     response = requests.get(
         f"{url}{doi}",
@@ -248,8 +448,17 @@ def get_crossref_response_from_doi(url: str, doi: str) -> requests.Response:
 
 
 def get_wiley_response(url: str, doi: str) -> requests.Response:
-    """Get response from Wiley server based on a DOI."""
+    """Get response from Wiley server based on a DOI.
+
+    Args:
+        url: The URL used to request article content responses.
+        doi: The DOI used to request article content.
+    """
     logger.debug("Requesting PDF for %s%s", url, doi)
     response = requests.get(f"{url}{doi}", headers=WILEY_HEADERS, timeout=30)
     logger.debug("Response code retrieved from Wiley server for %s: %s", doi, response)
     return response
+
+
+class InvalidSQSMessageError(Exception):
+    pass
