@@ -367,34 +367,3 @@ def test_listen_message_error(
         assert result.exit_code == 0
         assert "Error while processing SQS message:" in caplog.text
         assert "Logs sent to" in caplog.text
-
-
-def test_listen_sqs_queue_error(
-    caplog, mocked_dynamodb, mocked_ses, mocked_sqs_output, runner
-):
-    with caplog.at_level(logging.DEBUG):
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_output_queue",
-                "non-existent",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "listen",
-                "--retry_threshold",
-                "10",
-            ],
-        )
-        assert result.exit_code == 0
-        assert "Error while retrieving messages from SQS queue:" in caplog.text
-        assert "Logs sent to" in caplog.text

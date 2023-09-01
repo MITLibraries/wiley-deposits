@@ -17,7 +17,6 @@ from awd.article import (
 )
 from awd.database import DoiProcessAttempt
 from awd.helpers import (
-    InvalidSQSMessageError,
     S3Client,
     SESClient,
     SQSClient,
@@ -202,19 +201,13 @@ def deposit(
 
     # Send logs as email via SES
     ses_client = SESClient(ctx.obj["aws_region"])
-
-    try:
-        ses_client.create_and_send_email(
-            subject=f"Automated Wiley deposit errors {date}",
-            attachment_content=stream.getvalue(),
-            attachment_name=f"{date}_submission_log.txt",
-            source_email_address=ctx.obj["log_source_email"],
-            recipient_email_address=ctx.obj["log_recipient_email"],
-        )
-    except ClientError as e:
-        logger.exception(
-            "Failed to send deposit logs: %s", e.response["Error"]["Message"]
-        )
+    ses_client.create_and_send_email(
+        subject=f"Automated Wiley deposit errors {date}",
+        attachment_content=stream.getvalue(),
+        attachment_name=f"{date}_submission_log.txt",
+        source_email_address=ctx.obj["log_source_email"],
+        recipient_email_address=ctx.obj["log_recipient_email"],
+    )
 
 
 @cli.command()
@@ -240,32 +233,22 @@ def listen(
 
     DoiProcessAttempt.set_table_name(ctx.obj["doi_table_name"])
 
-    try:
-        for sqs_message in sqs_client.receive():
-            try:
-                sqs_client.process_result_message(
-                    sqs_message=sqs_message,
-                    retry_threshold=retry_threshold,
-                )
-            except (KeyError, ClientError, InvalidSQSMessageError):
-                logger.exception("Error while processing SQS message: %s", sqs_message)
-                continue
-        logger.debug("Messages received and deleted from output queue")
-    except ClientError as e:
-        logger.exception(
-            "Error while retrieving messages from SQS queue: %s",
-            e.response["Error"]["Message"],
-        )
+    for sqs_message in sqs_client.receive():
+        try:
+            sqs_client.process_result_message(
+                sqs_message=sqs_message,
+                retry_threshold=retry_threshold,
+            )
+        except:  # noqa: E722
+            logger.exception("Error while processing SQS message: %s", sqs_message)
+            continue
+    logger.debug("Messages received and deleted from output queue")
 
     ses_client = SESClient(ctx.obj["aws_region"])
-
-    try:
-        ses_client.create_and_send_email(
-            subject=f"DSS results {date}",
-            attachment_content=stream.getvalue(),
-            attachment_name=f"DSS results {date}.txt",
-            source_email_address=ctx.obj["log_source_email"],
-            recipient_email_address=ctx.obj["log_recipient_email"],
-        )
-    except ClientError as e:
-        logger.exception("Failed to send listen logs: %s", e.response["Error"]["Message"])
+    ses_client.create_and_send_email(
+        subject=f"DSS results {date}",
+        attachment_content=stream.getvalue(),
+        attachment_name=f"DSS results {date}.txt",
+        source_email_address=ctx.obj["log_source_email"],
+        recipient_email_address=ctx.obj["log_recipient_email"],
+    )
