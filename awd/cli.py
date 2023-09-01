@@ -13,13 +13,14 @@ from awd.article import (
     InvalidArticleContentResponseError,
     InvalidCrossrefMetadataError,
     InvalidDSpaceMetadataError,
+    UnprocessedStatusFalseError,
 )
-from awd.database import DoiProcessAttempt, UnprocessedStatusFalseError
+from awd.database import DoiProcessAttempt
 from awd.helpers import (
     InvalidSQSMessageError,
-    S3ArticleProcessClient,
-    SESArticleProcessClient,
-    SQSArticleProcessClient,
+    S3Client,
+    SESClient,
+    SQSClient,
     get_dois_from_spreadsheet,
 )
 
@@ -145,8 +146,8 @@ def deposit(
     """
     date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
-    s3_client = S3ArticleProcessClient()
-    sqs_client = SQSArticleProcessClient(
+    s3_client = S3Client()
+    sqs_client = SQSClient(
         region=ctx.obj["aws_region"],
         base_url=ctx.obj["sqs_base_url"],
         queue_name=sqs_input_queue,
@@ -160,9 +161,8 @@ def deposit(
         )
         return  # Unable to access S3 bucket, exit application
 
-    doi_process_attempt = DoiProcessAttempt()
-    doi_process_attempt.set_table_name(ctx.obj["doi_table_name"])
-    if not doi_process_attempt.exists():
+    DoiProcessAttempt.set_table_name(ctx.obj["doi_table_name"])
+    if not DoiProcessAttempt.exists():
         logger.exception("Unable to read DynamoDB table")
         return  # exit application
 
@@ -174,7 +174,6 @@ def deposit(
                 doi=doi,
                 metadata_url=metadata_url,
                 content_url=content_url,
-                doi_process_attempt=doi_process_attempt,
                 s3_client=s3_client,
                 bucket=bucket,
                 sqs_client=sqs_client,
@@ -202,7 +201,7 @@ def deposit(
     logger.debug("Submission process has completed")
 
     # Send logs as email via SES
-    ses_client = SESArticleProcessClient(ctx.obj["aws_region"])
+    ses_client = SESClient(ctx.obj["aws_region"])
 
     try:
         ses_client.create_and_send_email(
@@ -233,21 +232,20 @@ def listen(
     """Retrieve messages from an SQS queue and email the results to stakeholders."""
     date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
-    sqs_client = SQSArticleProcessClient(
+    sqs_client = SQSClient(
         region=ctx.obj["aws_region"],
         base_url=ctx.obj["sqs_base_url"],
         queue_name=ctx.obj["sqs_output_queue"],
     )
 
-    doi_process_attempt = DoiProcessAttempt()
-    doi_process_attempt.set_table_name(ctx.obj["doi_table_name"])
+    DoiProcessAttempt()
+    DoiProcessAttempt.set_table_name(ctx.obj["doi_table_name"])
 
     try:
         for sqs_message in sqs_client.receive():
             try:
                 sqs_client.process_result_message(
                     sqs_message=sqs_message,
-                    doi_process_attempt=doi_process_attempt,
                     retry_threshold=retry_threshold,
                 )
             except (KeyError, ClientError, InvalidSQSMessageError):
@@ -260,7 +258,7 @@ def listen(
             e.response["Error"]["Message"],
         )
 
-    ses_client = SESArticleProcessClient(ctx.obj["aws_region"])
+    ses_client = SESClient(ctx.obj["aws_region"])
 
     try:
         ses_client.create_and_send_email(

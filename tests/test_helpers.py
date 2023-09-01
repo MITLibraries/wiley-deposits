@@ -14,7 +14,7 @@ from awd.helpers import (
 from awd.status import Status
 
 
-# S3ArticleProcessClient tests
+# S3Client tests
 def test_s3_archive_file_in_bucket(mocked_s3, s3_client):
     s3_client.put_file(
         file_content="test1,test2,test3,test4",
@@ -78,7 +78,7 @@ def test_s3_retrieve_file_type_from_bucket_without_matching_csv(mocked_s3, s3_cl
     )
 
 
-# SESArticleProcessClient tests
+# SESClient tests
 def test_ses_create_email(ses_client):
     message = ses_client.create_email(
         subject="Email subject",
@@ -111,7 +111,7 @@ def test_ses_create_and_send_email(caplog, mocked_ses, ses_client):
         assert "Logs sent to test@example.com" in caplog.text
 
 
-# SQSArticleProcessClient tests
+# SQSClient tests
 def test_sqs_create_dss_message_attributes(sqs_client, submission_message_attributes):
     dss_message_attributes = sqs_client.create_dss_message_attributes(
         package_id="123", submission_source="Submission system", output_queue="DSS queue"
@@ -165,7 +165,7 @@ def test_sqs_error_message_above_retry_threshold_set_failed_status(
     )
     messages = sqs_client.receive()
     receipt_handle = next(messages)["ReceiptHandle"]
-    sample_doiprocessattempt.add_item(doi="222.2/2222")
+    sample_doiprocessattempt.doi = "222.2/2222"
     sqs_client.error_message(
         doi="222.2/2222",
         message_body=result_message_body_error,
@@ -194,7 +194,7 @@ def test_sqs_error_message_below_retry_threshold_set_unprocessed_status(
     )
     messages = sqs_client.receive()
     receipt_handle = next(messages)["ReceiptHandle"]
-    sample_doiprocessattempt.add_item("222.2/2222")
+    sample_doiprocessattempt.doi = "222.2/2222"
     sqs_client.error_message(
         doi="222.2/2222",
         message_body=result_message_body_error,
@@ -224,9 +224,9 @@ def test_sqs_process_result_message_error(
         message_body=result_message_body_error,
     )
     messages = sqs_client.receive()
+    sample_doiprocessattempt.doi = "222.2/2222"
     sqs_client.process_result_message(
         sqs_message=next(messages),
-        doi_process_attempt=sample_doiprocessattempt,
         retry_threshold=30,
     )
     assert sample_doiprocessattempt.get("222.2/2222").status == Status.UNPROCESSED.value
@@ -244,7 +244,6 @@ def test_sqs_process_result_message_raises_invalid_sqs_exception(
     with pytest.raises(InvalidSQSMessageError):
         sqs_client.process_result_message(
             sqs_message=next(messages),
-            doi_process_attempt=sample_doiprocessattempt,
             retry_threshold=30,
         )
 
@@ -263,7 +262,6 @@ def test_sqs_process_result_message_success(
     messages = sqs_client.receive()
     sqs_client.process_result_message(
         sqs_message=next(messages),
-        doi_process_attempt=sample_doiprocessattempt,
         retry_threshold=30,
     )
     assert (
@@ -328,7 +326,6 @@ def test_sqs_success_message(
     )
     messages = sqs_client.receive()
     receipt_handle = next(messages)["ReceiptHandle"]
-    sample_doiprocessattempt.add_item(doi="222.2/2222")
     sqs_client.success_message(
         doi="10.1002/term.3131",
         message_body=result_message_body_success,

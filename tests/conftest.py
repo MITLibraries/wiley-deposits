@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 
@@ -12,9 +13,9 @@ from awd import config
 from awd.article import Article
 from awd.database import DoiProcessAttempt
 from awd.helpers import (
-    S3ArticleProcessClient,
-    SESArticleProcessClient,
-    SQSArticleProcessClient,
+    S3Client,
+    SESClient,
+    SQSClient,
 )
 
 
@@ -67,12 +68,11 @@ def test_aws_user():
 
 
 @pytest.fixture
-def sample_article(sample_doiprocessattempt):
+def sample_article():
     return Article(
         doi="10.1002/term.3131",
         metadata_url="http://example.com/works/",
         content_url="http://example.com/doi/",
-        doi_process_attempt=sample_doiprocessattempt,
         s3_client=s3_client,
         bucket="awd",
         sqs_client=sqs_client,
@@ -86,26 +86,27 @@ def sample_article(sample_doiprocessattempt):
 @pytest.fixture
 @freeze_time("2023-08-21")
 def sample_doiprocessattempt(mocked_dynamodb):
-    doi_process_attempt = DoiProcessAttempt()
-    doi_process_attempt.set_table_name("wiley-test")
-    doi_process_attempt.add_item("10.1002/term.3131")
-    doi_process_attempt.add_item("222.2/2222")
-    return doi_process_attempt
+    return DoiProcessAttempt(
+        attempts=0,
+        doi="10.1002/term.3131",
+        last_modified=datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT),
+        status=1,
+    )
 
 
 @pytest.fixture
 def s3_client():
-    return S3ArticleProcessClient()
+    return S3Client()
 
 
 @pytest.fixture
 def ses_client():
-    return SESArticleProcessClient(region=config.AWS_REGION_NAME)
+    return SESClient(region=config.AWS_REGION_NAME)
 
 
 @pytest.fixture
 def sqs_client():
-    return SQSArticleProcessClient(
+    return SQSClient(
         region=config.AWS_REGION_NAME,
         base_url="https://queue.amazonaws.com/123456789012/",
         queue_name="mock-output-queue",
@@ -126,6 +127,9 @@ def mocked_dynamodb():
                 {"AttributeName": "doi", "AttributeType": "S"},
             ],
         )
+        DoiProcessAttempt.set_table_name("wiley-test")
+        DoiProcessAttempt.add_item("10.1002/term.3131")
+        DoiProcessAttempt.add_item("222.2/2222")
         yield dynamodb
 
 

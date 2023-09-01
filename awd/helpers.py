@@ -10,6 +10,7 @@ import requests
 import smart_open
 from boto3 import client
 
+from awd.database import DoiProcessAttempt
 from awd.status import Status
 
 if TYPE_CHECKING:
@@ -24,8 +25,6 @@ if TYPE_CHECKING:
         SendMessageResultTypeDef,
     )
 
-    from awd.database import DoiProcessAttempt
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ WILEY_HEADERS = {
 }
 
 
-class S3ArticleProcessClient:
+class S3Client:
     """An S3 class that provides a generic boto3 s3 client.
 
     Includes specific S3 functionality necessary for Wiley deposits.
@@ -104,7 +103,7 @@ class S3ArticleProcessClient:
             yield s3_object["Key"]
 
 
-class SESArticleProcessClient:
+class SESClient:
     """An SES class that provides a generic boto3 SES client."""
 
     def __init__(self, region: str) -> None:
@@ -175,7 +174,7 @@ class SESArticleProcessClient:
         logger.debug("Logs sent to %s", recipient_email_address)
 
 
-class SQSArticleProcessClient:
+class SQSClient:
     """An SQS class that provides a generic boto3 SQS client."""
 
     def __init__(self, region: str, base_url: str, queue_name: str) -> None:
@@ -250,14 +249,12 @@ class SQSArticleProcessClient:
     def process_result_message(
         self,
         sqs_message: MessageTypeDef,
-        doi_process_attempt: DoiProcessAttempt,
         retry_threshold: str,
     ) -> None:
         """Validate and then process an SQS result message based on content.
 
         Args:
             sqs_message: An SQS result message to be processed.
-            doi_process_attempt: A database item represented as a PynamoDB object.
             retry_threshold: The number of times to attempt processing an article.
         """
         if (
@@ -266,6 +263,7 @@ class SQSArticleProcessClient:
             and sqs_message.get("ReceiptHandle")
         ):
             doi = sqs_message["MessageAttributes"]["PackageID"]["StringValue"]
+            doi_process_attempt = DoiProcessAttempt.get(doi)
             message_body = json.loads(str(sqs_message["Body"]))
             receipt_handle = sqs_message["ReceiptHandle"]
             if message_body["ResultType"] == "error":
@@ -305,19 +303,15 @@ class SQSArticleProcessClient:
         """
         logger.exception("DOI: %s, Result: %s", doi, message_body)
         self.delete(receipt_handle)
-        if doi_process_attempt.attempts_exceeded(
-            doi=doi, retry_threshold=int(retry_threshold)
-        ):
-            doi_process_attempt.update_status(doi=doi, status_code=Status.FAILED.value)
+        if doi_process_attempt.attempts_exceeded(retry_threshold=int(retry_threshold)):
+            doi_process_attempt.update_status(status_code=Status.FAILED.value)
             logger.exception(
                 "DOI: '%s' has exceeded the retry threshold and will not be "
                 "attempted again.",
                 doi,
             )
         else:
-            doi_process_attempt.update_status(
-                doi=doi, status_code=Status.UNPROCESSED.value
-            )
+            doi_process_attempt.update_status(status_code=Status.UNPROCESSED.value)
 
     def success_message(
         self,
@@ -336,7 +330,7 @@ class SQSArticleProcessClient:
         """
         logger.info("DOI: %s, Result: %s", doi, message_body)
         self.delete(receipt_handle)
-        doi_process_attempt.update_status(doi=doi, status_code=Status.SUCCESS.value)
+        doi_process_attempt.update_status(status_code=Status.SUCCESS.value)
 
     def send(
         self,

@@ -5,7 +5,6 @@ import logging
 from typing import Any
 
 from pynamodb.attributes import NumberAttribute, UnicodeAttribute
-from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 
 from awd.config import DATE_FORMAT
@@ -41,92 +40,45 @@ class DoiProcessAttempt(Model):
         logger.debug("%s added to table", doi)
         return response
 
-    def has_unprocessed_status(self, doi: str) -> bool:
+    def has_unprocessed_status(self) -> bool:
         """Validate that a DOI has unprocessed status in the DOI table."""
-        return DoiProcessAttempt.get(doi).status == Status.UNPROCESSED.value
+        return self.get(self.doi).status == Status.UNPROCESSED.value
 
-    def check_doi_and_add_to_table(self, doi: str) -> None:
-        """Check if DOI should be added to table.
-
-        If not present, add the DOI to the table.  Check for unprocessed status
-        and raise exception if DOI should not be retried. Increment attempts field.
-
-        Args:
-            doi: The DOI to be checked and possibly added to the DOI table.
-        """
-        try:
-            self.get(doi)
-        except DoesNotExist:
-            self.add_item(doi)
-        if not self.has_unprocessed_status(doi):
-            raise UnprocessedStatusFalseError
-        self.increment_attempts(doi)
-
-    @classmethod
-    def attempts_exceeded(cls, doi: str, retry_threshold: int) -> bool:
+    def attempts_exceeded(self, retry_threshold: int) -> bool:
         """Validate whether a DOI has exceeded the retry threshold.
 
         Args:
-            doi: The DOI to be checked.
             retry_threshold: The number of attempts that should be
             made before setting the item to a failed status.
         """
         attempts_exceeded = False
-        item = cls.get(doi)
-        if item.attempts >= retry_threshold:
+        if self.attempts >= retry_threshold:
             attempts_exceeded = True
         return attempts_exceeded
 
+    def increment_attempts(self) -> None:
+        """Increment attempts for DOI item in DOI table."""
+        self.attempts += 1
+        self.last_modified = datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
+        self.save()
+        logger.debug("%s attempts updated to: %s", self.doi, self.attempts)
+
     @classmethod
-    def increment_attempts(cls, doi: str) -> None:
-        """Increment attempts for  DOI item in DOI table.
-
-        Args:
-            doi: The DOI item to be updated in the DOI table.
-        """
-        item = cls.get(doi)
-        logger.debug("Response retrieved from DynamoDB table: %s", item)
-        updated_attempts = item.attempts + 1
-        response = item.update(
-            actions=[
-                cls.attempts.set(updated_attempts),
-                cls.last_modified.set(
-                    datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
-                ),
-            ]
-        )
-        logger.debug("%s attempts updated to: %s", doi, updated_attempts)
-        return response
-
-    def set_table_name(self, table_name: str) -> None:
+    def set_table_name(cls, table_name: str) -> None:
         """Set table_name attribute.
 
         Args:
             table_name: The name of the DynamoDB table.
         """
-        self.Meta.table_name = table_name
+        cls.Meta.table_name = table_name
 
-    @classmethod
-    def update_status(cls, doi: str, status_code: int) -> None:
+    def update_status(self, status_code: int) -> None:
         """Update status for DOI item in DOI table.
 
         Args:
-            doi: The DOI to be updated in the DOI table.
             status_code: The status code to be set for the item.
         """
-        item = cls.get(doi)
-        logger.debug("Response retrieved from DynamoDB table: %s", item)
-        response = item.update(
-            actions=[
-                cls.status.set(status_code),
-                cls.last_modified.set(
-                    datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
-                ),
-            ]
-        )
-        logger.debug("%s status updated to: %s", doi, status_code)
-        return response
-
-
-class UnprocessedStatusFalseError(Exception):
-    pass
+        self.status = status_code
+        self.last_modified = datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
+        self.save()
+        logger.debug("%s status updated to: %s", self.doi, self.status)
