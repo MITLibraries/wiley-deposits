@@ -1,6 +1,5 @@
 import datetime
 import io
-import json
 import logging
 
 import click
@@ -14,10 +13,15 @@ from awd.article import (
     InvalidArticleContentResponseError,
     InvalidCrossrefMetadataError,
     InvalidDSpaceMetadataError,
+    UnprocessedStatusFalseError,
 )
-from awd.database import DoiProcessAttempt, UnprocessedStatusFalseError
-from awd.helpers import S3, SES, SQS, get_dois_from_spreadsheet
-from awd.status import Status
+from awd.database import DoiProcessAttempt
+from awd.helpers import (
+    S3Client,
+    SESClient,
+    SQSClient,
+    get_dois_from_spreadsheet,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +40,7 @@ logger = logging.getLogger(__name__)
     help="The log level to use.",
 )
 @click.option(
-    "--doi_table",
+    "--doi_table_name",
     required=True,
     default=config.DOI_TABLE,
     help="The DynamoDB table containing the state of DOIs in the workflow.",
@@ -70,7 +74,7 @@ def cli(
     ctx: click.Context,
     aws_region: str,
     log_level: str,
-    doi_table: str,
+    doi_table_name: str,
     sqs_base_url: str,
     sqs_output_queue: str,
     log_source_email: str,
@@ -88,7 +92,7 @@ def cli(
     ctx.ensure_object(dict)
     ctx.obj["stream"] = stream
     ctx.obj["aws_region"] = aws_region
-    ctx.obj["doi_table"] = doi_table
+    ctx.obj["doi_table_name"] = doi_table_name
     ctx.obj["sqs_base_url"] = sqs_base_url
     ctx.obj["sqs_output_queue"] = sqs_output_queue
     ctx.obj["log_source_email"] = log_source_email
@@ -141,8 +145,12 @@ def deposit(
     """
     date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
-    s3_client = S3()
-    sqs_client = SQS(ctx.obj["aws_region"])
+    s3_client = S3Client()
+    sqs_client = SQSClient(
+        region=ctx.obj["aws_region"],
+        base_url=ctx.obj["sqs_base_url"],
+        queue_name=sqs_input_queue,
+    )
 
     try:
         s3_client.client.list_objects_v2(Bucket=bucket)
@@ -152,28 +160,26 @@ def deposit(
         )
         return  # Unable to access S3 bucket, exit application
 
-    doi_table = DoiProcessAttempt()
-    doi_table.set_table_name(ctx.obj["doi_table"])
-    if not doi_table.exists():
+    DoiProcessAttempt.set_table_name(ctx.obj["doi_table_name"])
+    if not DoiProcessAttempt.exists():
         logger.exception("Unable to read DynamoDB table")
         return  # exit application
 
-    for doi_file in s3_client.filter_files_in_bucket(bucket, ".csv", "archived"):
+    for doi_file in s3_client.retrieve_file_type_from_bucket(bucket, ".csv", "archived"):
         dois = get_dois_from_spreadsheet(f"s3://{bucket}/{doi_file}")
 
         for doi in dois:
             article = Article(
-                doi,
-                metadata_url,
-                content_url,
-                doi_table,
-                s3_client,
-                bucket,
-                sqs_client,
-                ctx.obj["sqs_base_url"],
-                sqs_input_queue,
-                ctx.obj["sqs_output_queue"],
-                collection_handle,
+                doi=doi,
+                metadata_url=metadata_url,
+                content_url=content_url,
+                s3_client=s3_client,
+                bucket=bucket,
+                sqs_client=sqs_client,
+                sqs_base_url=ctx.obj["sqs_base_url"],
+                sqs_input_queue=sqs_input_queue,
+                sqs_output_queue=ctx.obj["sqs_output_queue"],
+                collection_handle=collection_handle,
             )
             try:
                 article.process()
@@ -188,22 +194,20 @@ def deposit(
                 logger.exception(article.doi)
                 continue
 
-        s3_client.archive_file_with_new_key(bucket, doi_file, "archived")
+        s3_client.archive_file_with_new_key(
+            bucket=bucket, key=doi_file, archived_key_prefix="archived"
+        )
     logger.debug("Submission process has completed")
 
     # Send logs as email via SES
-    ses_client = SES(ctx.obj["aws_region"])
-
-    try:
-        ses_client.create_and_send_email(
-            subject=f"Automated Wiley deposit errors {date}",
-            attachment_content=stream.getvalue(),
-            attachment_name=f"{date}_submission_log.txt",
-            source_email_address=ctx.obj["log_source_email"],
-            recipient_email_address=ctx.obj["log_recipient_email"],
-        )
-    except ClientError as e:
-        logger.exception("Failed to send logs: %s", e.response["Error"]["Message"])
+    ses_client = SESClient(ctx.obj["aws_region"])
+    ses_client.create_and_send_email(
+        subject=f"Automated Wiley deposit errors {date}",
+        attachment_content=stream.getvalue(),
+        attachment_name=f"{date}_submission_log.txt",
+        source_email_address=ctx.obj["log_source_email"],
+        recipient_email_address=ctx.obj["log_recipient_email"],
+    )
 
 
 @cli.command()
@@ -221,87 +225,30 @@ def listen(
     """Retrieve messages from an SQS queue and email the results to stakeholders."""
     date = datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT)
     stream = ctx.obj["stream"]
-    sqs = SQS(ctx.obj["aws_region"])
-
-    doi_table = DoiProcessAttempt()
-    doi_table.set_table_name(ctx.obj["doi_table"])
-
-    try:
-        for sqs_message in sqs.receive(
-            ctx.obj["sqs_base_url"], ctx.obj["sqs_output_queue"]
-        ):
-            try:
-                doi = sqs_message["MessageAttributes"]["PackageID"]["StringValue"]
-            except KeyError:
-                logger.exception(
-                    "Failed to get DOI from message attributes: %s", sqs_message
-                )
-                continue
-            try:
-                body = json.loads(str(sqs_message.get("Body")))
-            except ValueError:
-                logger.exception("Failed to parse body of SQS message: %s", sqs_message)
-                continue
-            if body["ResultType"] == "error":
-                logger.exception("DOI: %s, Result: %s", doi, body)
-                sqs.delete(
-                    ctx.obj["sqs_base_url"],
-                    ctx.obj["sqs_output_queue"],
-                    sqs_message["ReceiptHandle"],
-                )
-                try:
-                    if doi_table.attempts_exceeded(doi, int(retry_threshold)):
-                        doi_table.update_status(doi, Status.FAILED.value)
-                    else:
-                        doi_table.update_status(doi, Status.UNPROCESSED.value)
-                except KeyError:
-                    logger.exception(
-                        "Key error in table while processing %s",
-                        doi,
-                    )
-                except ClientError as e:
-                    logger.exception(
-                        "Table error while processing %s: %s",
-                        doi,
-                        e.response["Error"]["Message"],
-                    )
-            else:
-                logger.info("DOI: %s, Result: %s", doi, body)
-                sqs.delete(
-                    ctx.obj["sqs_base_url"],
-                    ctx.obj["sqs_output_queue"],
-                    sqs_message["ReceiptHandle"],
-                )
-                try:
-                    doi_table.update_status(doi, Status.SUCCESS.value)
-                except KeyError:
-                    logger.exception(
-                        "Key error in table while processing %s",
-                        doi,
-                    )
-                except ClientError as e:
-                    logger.exception(
-                        "Table error while processing %s: %s",
-                        doi,
-                        e.response["Error"]["Message"],
-                    )
-        logger.debug("Messages received and deleted from output queue")
-    except ClientError as e:
-        logger.exception(
-            "Failure while retrieving SQS messages: %s", e.response["Error"]["Message"]
-        )
-    ses_client = SES(ctx.obj["aws_region"])
-    email_message = ses_client.create_email(
-        f"DSS results {date}",
-        stream.getvalue(),
-        f"DSS results {date}.txt",
+    sqs_client = SQSClient(
+        region=ctx.obj["aws_region"],
+        base_url=ctx.obj["sqs_base_url"],
+        queue_name=ctx.obj["sqs_output_queue"],
     )
-    try:
-        ses_client.send_email(
-            ctx.obj["log_source_email"],
-            ctx.obj["log_recipient_email"],
-            email_message,
-        )
-        logger.debug("Logs sent to %s", ctx.obj["log_recipient_email"])
-    except ClientError as e:
-        logger.exception("Failed to send logs: %s", e.response["Error"]["Message"])
+
+    DoiProcessAttempt.set_table_name(ctx.obj["doi_table_name"])
+
+    for sqs_message in sqs_client.receive():
+        try:
+            sqs_client.process_result_message(
+                sqs_message=sqs_message,
+                retry_threshold=retry_threshold,
+            )
+        except:  # noqa: E722
+            logger.exception("Error while processing SQS message: %s", sqs_message)
+            continue
+    logger.debug("Messages received and deleted from output queue")
+
+    ses_client = SESClient(ctx.obj["aws_region"])
+    ses_client.create_and_send_email(
+        subject=f"DSS results {date}",
+        attachment_content=stream.getvalue(),
+        attachment_name=f"DSS results {date}.txt",
+        source_email_address=ctx.obj["log_source_email"],
+        recipient_email_address=ctx.obj["log_recipient_email"],
+    )

@@ -13,7 +13,7 @@ def test_deposit_success(
     mocked_dynamodb,
     mocked_s3,
     mocked_ses,
-    mocked_sqs,
+    mocked_sqs_input,
     s3_client,
     sqs_client,
     submission_message_body,
@@ -21,9 +21,9 @@ def test_deposit_success(
 ):
     with caplog.at_level(logging.DEBUG):
         s3_client.put_file(
-            doi_list_success,
-            "awd",
-            "doi_success.csv",
+            file_content=doi_list_success,
+            bucket="awd",
+            key="doi_success.csv",
         )
         assert len(s3_client.client.list_objects(Bucket="awd")["Contents"]) == 1
         result = runner.invoke(
@@ -31,7 +31,7 @@ def test_deposit_success(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
@@ -61,9 +61,8 @@ def test_deposit_success(
         assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
         s3_client.client.get_object(Bucket="awd", Key="10.1002-term.3131.pdf")
         assert uploaded_metadata["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
-        messages = sqs_client.receive(
-            "https://queue.amazonaws.com/123456789012/", "mock-input-queue"
-        )
+        sqs_client.queue_name = "mock-input-queue"
+        messages = sqs_client.receive()
         for message in messages:
             assert message["Body"] == submission_message_body
         assert (
@@ -81,22 +80,22 @@ def test_deposit_insufficient_metadata(
     mocked_dynamodb,
     mocked_s3,
     mocked_ses,
-    mocked_sqs,
+    mocked_sqs_input,
     s3_client,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
         s3_client.put_file(
-            doi_list_insufficient_metadata,
-            "awd",
-            "doi_insufficient_metadata.csv",
+            file_content=doi_list_insufficient_metadata,
+            bucket="awd",
+            key="doi_insufficient_metadata.csv",
         )
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
@@ -136,22 +135,22 @@ def test_deposit_pdf_unavailable(
     mocked_dynamodb,
     mocked_s3,
     mocked_ses,
-    mocked_sqs,
+    mocked_sqs_input,
     s3_client,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
         s3_client.put_file(
-            doi_list_pdf_unavailable,
-            "awd",
-            "doi_pdf_unavailable.csv",
+            file_content=doi_list_pdf_unavailable,
+            bucket="awd",
+            key="doi_pdf_unavailable.csv",
         )
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
@@ -187,7 +186,7 @@ def test_deposit_s3_nonexistent_bucket(
     mocked_dynamodb,
     mocked_s3,
     mocked_ses,
-    mocked_sqs,
+    mocked_sqs_input,
     s3_client,
     runner,
 ):
@@ -197,7 +196,7 @@ def test_deposit_s3_nonexistent_bucket(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
@@ -207,7 +206,7 @@ def test_deposit_s3_nonexistent_bucket(
                 "noreply@example.com",
                 "--log_recipient_email",
                 "mock@mock.mock",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "deposit",
                 "--metadata_url",
@@ -235,22 +234,22 @@ def test_deposit_dynamodb_error(
     mocked_dynamodb,
     mocked_s3,
     mocked_ses,
-    mocked_sqs,
+    mocked_sqs_input,
     s3_client,
     runner,
 ):
     with caplog.at_level(logging.INFO):
         s3_client.put_file(
-            doi_list_success,
-            "awd",
-            "doi_success.csv",
+            file_content=doi_list_success,
+            bucket="awd",
+            key="doi_success.csv",
         )
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
@@ -260,7 +259,7 @@ def test_deposit_dynamodb_error(
                 "noreply@example.com",
                 "--log_recipient_email",
                 "mock@mock.mock",
-                "--doi_table",
+                "--doi_table_name",
                 "not-a-table",
                 "deposit",
                 "--metadata_url",
@@ -284,27 +283,23 @@ def test_listen_success(
     mocked_dynamodb,
     mocked_s3,
     mocked_ses,
-    mocked_sqs,
+    mocked_sqs_output,
     sample_doiprocessattempt,
     sqs_client,
-    result_failure_message_attributes,
-    result_success_message_attributes,
-    result_failure_message_body,
-    result_success_message_body,
+    result_message_attributes_error,
+    result_message_attributes_success,
+    result_message_body_error,
+    result_message_body_success,
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
         sqs_client.send(
-            "https://queue.amazonaws.com/123456789012/",
-            "mock-output-queue",
-            result_failure_message_attributes,
-            result_failure_message_body,
+            result_message_attributes_error,
+            result_message_body_error,
         )
         sqs_client.send(
-            "https://queue.amazonaws.com/123456789012/",
-            "mock-output-queue",
-            result_success_message_attributes,
-            result_success_message_body,
+            message_attributes=result_message_attributes_success,
+            message_body=result_message_body_success,
         )
         sample_doiprocessattempt.add_item("111.1/1111")
         sample_doiprocessattempt.add_item("222.2/2222")
@@ -313,11 +308,11 @@ def test_listen_success(
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_output_queue",
                 "mock-output-queue",
@@ -331,31 +326,35 @@ def test_listen_success(
             ],
         )
         assert result.exit_code == 0
-        assert str(result_failure_message_body) in caplog.text
-        assert str(result_success_message_body) in caplog.text
+        assert str(result_message_body_error) in caplog.text
+        assert str(result_message_body_success) in caplog.text
         assert "Messages received and deleted from output queue" in caplog.text
-        messages = sqs_client.receive(
-            "https://queue.amazonaws.com/123456789012/", "mock-output-queue"
-        )
+        messages = sqs_client.receive()
         assert next(messages, None) is None
         assert "Logs sent to" in caplog.text
 
 
-def test_listen_failure(caplog, mocked_dynamodb, mocked_ses, mocked_sqs, runner):
+def test_listen_message_error(
+    caplog, mocked_dynamodb, mocked_ses, mocked_sqs_output, runner, sqs_client
+):
     with caplog.at_level(logging.DEBUG):
+        sqs_client.send(
+            message_attributes={},
+            message_body={},
+        )
         result = runner.invoke(
             cli,
             [
                 "--log_level",
                 "INFO",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_base_url",
                 "https://queue.amazonaws.com/123456789012/",
-                "--doi_table",
+                "--doi_table_name",
                 "wiley-test",
                 "--sqs_output_queue",
-                "non-existent",
+                "mock-output-queue",
                 "--log_source_email",
                 "noreply@example.com",
                 "--log_recipient_email",
@@ -366,5 +365,5 @@ def test_listen_failure(caplog, mocked_dynamodb, mocked_ses, mocked_sqs, runner)
             ],
         )
         assert result.exit_code == 0
-        assert "Failure while retrieving SQS messages" in caplog.text
+        assert "Error while processing SQS message:" in caplog.text
         assert "Logs sent to" in caplog.text

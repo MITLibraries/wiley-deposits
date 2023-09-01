@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 
@@ -11,7 +12,11 @@ from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
 from awd import config
 from awd.article import Article
 from awd.database import DoiProcessAttempt
-from awd.helpers import S3, SES, SQS
+from awd.helpers import (
+    S3Client,
+    SESClient,
+    SQSClient,
+)
 
 
 @pytest.fixture
@@ -63,12 +68,11 @@ def test_aws_user():
 
 
 @pytest.fixture
-def sample_article(sample_doiprocessattempt):
+def sample_article():
     return Article(
         doi="10.1002/term.3131",
         metadata_url="http://example.com/works/",
         content_url="http://example.com/doi/",
-        doi_table=sample_doiprocessattempt,
         s3_client=s3_client,
         bucket="awd",
         sqs_client=sqs_client,
@@ -82,25 +86,31 @@ def sample_article(sample_doiprocessattempt):
 @pytest.fixture
 @freeze_time("2023-08-21")
 def sample_doiprocessattempt(mocked_dynamodb):
-    doi_table = DoiProcessAttempt()
-    doi_table.set_table_name("wiley-test")
-    doi_table.add_item("10.1002/term.3131")
-    return doi_table
+    return DoiProcessAttempt(
+        attempts=0,
+        doi="10.1002/term.3131",
+        last_modified=datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT),
+        status=1,
+    )
 
 
 @pytest.fixture
 def s3_client():
-    return S3()
+    return S3Client()
 
 
 @pytest.fixture
 def ses_client():
-    return SES(config.AWS_REGION_NAME)
+    return SESClient(region=config.AWS_REGION_NAME)
 
 
 @pytest.fixture
 def sqs_client():
-    return SQS(config.AWS_REGION_NAME)
+    return SQSClient(
+        region=config.AWS_REGION_NAME,
+        base_url="https://queue.amazonaws.com/123456789012/",
+        queue_name="mock-output-queue",
+    )
 
 
 @pytest.fixture
@@ -117,6 +127,9 @@ def mocked_dynamodb():
                 {"AttributeName": "doi", "AttributeType": "S"},
             ],
         )
+        DoiProcessAttempt.set_table_name("wiley-test")
+        DoiProcessAttempt.add_item("10.1002/term.3131")
+        DoiProcessAttempt.add_item("222.2/2222")
         yield dynamodb
 
 
@@ -154,10 +167,19 @@ def mocked_ses():
 
 
 @pytest.fixture
-def mocked_sqs():
+def mocked_sqs_input(
+    sqs_client, result_message_attributes_error, result_message_body_error
+):
     with mock_sqs():
         sqs = boto3.resource("sqs", region_name="us-east-1")
         sqs.create_queue(QueueName="mock-input-queue")
+        yield sqs
+
+
+@pytest.fixture
+def mocked_sqs_output():
+    with mock_sqs():
+        sqs = boto3.resource("sqs", region_name="us-east-1")
         sqs.create_queue(QueueName="mock-output-queue")
         yield sqs
 
@@ -243,7 +265,7 @@ def dspace_metadata():
 
 
 @pytest.fixture
-def result_failure_message_attributes():
+def result_message_attributes_error():
     return {
         "PackageID": {"DataType": "String", "StringValue": "222.2/2222"},
         "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
@@ -251,7 +273,7 @@ def result_failure_message_attributes():
 
 
 @pytest.fixture
-def result_success_message_attributes():
+def result_message_attributes_success():
     return {
         "PackageID": {"DataType": "String", "StringValue": "10.1002/term.3131"},
         "SubmissionSource": {"DataType": "String", "StringValue": "Submission system"},
@@ -259,7 +281,7 @@ def result_success_message_attributes():
 
 
 @pytest.fixture
-def result_failure_message_body():
+def result_message_body_error():
     return json.dumps(
         {
             "ResultType": "error",
@@ -272,7 +294,7 @@ def result_failure_message_body():
 
 
 @pytest.fixture
-def result_success_message_body():
+def result_message_body_success():
     return json.dumps(
         {
             "ResultType": "success",
@@ -290,6 +312,15 @@ def result_success_message_body():
             ],
         }
     )
+
+
+@pytest.fixture
+def valid_result_message(result_message_attributes_success, result_message_body_success):
+    return {
+        "ReceiptHandle": "lvpqxcxlmyaowrhbvxadosldaghhidsdralddmejhdrnrfeyfuphzs",
+        "Body": result_message_body_success,
+        "MessageAttributes": result_message_attributes_success,
+    }
 
 
 @pytest.fixture

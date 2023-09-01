@@ -1,13 +1,38 @@
 from unittest.mock import Mock
 
 import pytest
+from pynamodb.exceptions import DoesNotExist
 from requests import Response
 
 from awd.article import (
     InvalidArticleContentResponseError,
     InvalidCrossrefMetadataError,
     InvalidDSpaceMetadataError,
+    UnprocessedStatusFalseError,
 )
+from awd.status import Status
+
+
+def test_check_doi_and_add_to_table_success(
+    mocked_dynamodb,
+    sample_article,
+    sample_doiprocessattempt,
+):
+    with pytest.raises(DoesNotExist):
+        sample_doiprocessattempt.get("10.1002/none.0000")
+    sample_article.doi = "10.1002/none.0000"
+    sample_article.check_doi_and_add_to_table()
+    assert sample_doiprocessattempt.get("10.1002/none.0000").attempts == 1
+
+
+def test_check_doi_and_add_to_table_unprocessed_status_false_raises_exception(
+    mocked_dynamodb,
+    sample_article,
+    sample_doiprocessattempt,
+):
+    sample_doiprocessattempt.update_status(status_code=Status.MESSAGE_SENT.value)
+    with pytest.raises(UnprocessedStatusFalseError):
+        sample_article.check_doi_and_add_to_table()
 
 
 def test_create_dspace_metadata_minimum_metadata(
