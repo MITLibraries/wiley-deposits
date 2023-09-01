@@ -31,6 +31,28 @@ def test_increment_attempts(mocked_dynamodb, sample_doiprocessattempt):
     assert sample_doiprocessattempt.get("10.1002/term.3131").attempts == 1
 
 
+def test_sqs_error_update_status_above_retry_threshold_set_failed_status(
+    caplog,
+    sample_doiprocessattempt,
+):
+    sample_doiprocessattempt.doi = "222.2/2222"
+    sample_doiprocessattempt.sqs_error_update_status(retry_threshold=0)
+    assert sample_doiprocessattempt.get("222.2/2222").status == Status.FAILED.value
+    assert (
+        "DOI: '222.2/2222' has exceeded the retry threshold and will not be "
+        "attempted again" in caplog.text
+    )
+
+
+def test_sqs_error_update_status_below_retry_threshold_set_unprocessed_status(
+    caplog,
+    sample_doiprocessattempt,
+):
+    sample_doiprocessattempt.doi = "222.2/2222"
+    sample_doiprocessattempt.sqs_error_update_status(retry_threshold=30)
+    assert sample_doiprocessattempt.get("222.2/2222").status == Status.UNPROCESSED.value
+
+
 def test_update_status(mocked_dynamodb, sample_doiprocessattempt):
     sample_doiprocessattempt.update_status(status_code=Status.MESSAGE_SENT.value)
     assert (

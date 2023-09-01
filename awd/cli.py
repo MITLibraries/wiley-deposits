@@ -238,7 +238,6 @@ def listen(
         queue_name=ctx.obj["sqs_output_queue"],
     )
 
-    DoiProcessAttempt()
     DoiProcessAttempt.set_table_name(ctx.obj["doi_table_name"])
 
     try:

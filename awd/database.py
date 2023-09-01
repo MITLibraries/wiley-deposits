@@ -40,10 +40,6 @@ class DoiProcessAttempt(Model):
         logger.debug("%s added to table", doi)
         return response
 
-    def has_unprocessed_status(self) -> bool:
-        """Validate that a DOI has unprocessed status in the DOI table."""
-        return self.get(self.doi).status == Status.UNPROCESSED.value
-
     def attempts_exceeded(self, retry_threshold: int) -> bool:
         """Validate whether a DOI has exceeded the retry threshold.
 
@@ -56,6 +52,10 @@ class DoiProcessAttempt(Model):
             attempts_exceeded = True
         return attempts_exceeded
 
+    def has_unprocessed_status(self) -> bool:
+        """Validate that a DOI has unprocessed status in the DOI table."""
+        return self.get(self.doi).status == Status.UNPROCESSED.value
+
     def increment_attempts(self) -> None:
         """Increment attempts for DOI item in DOI table."""
         self.attempts += 1
@@ -67,10 +67,30 @@ class DoiProcessAttempt(Model):
     def set_table_name(cls, table_name: str) -> None:
         """Set table_name attribute.
 
+        The table name must be set dynamically rather than from an env variable
+        due to the current configuration process.
+
         Args:
             table_name: The name of the DynamoDB table.
         """
         cls.Meta.table_name = table_name
+
+    def sqs_error_update_status(self, retry_threshold: int) -> None:
+        """Update status for error result message.
+
+        Args:
+            retry_threshold: The number of attempts that should be
+            made before setting the item to a failed status.
+        """
+        if self.attempts_exceeded(retry_threshold=retry_threshold):
+            self.update_status(status_code=Status.FAILED.value)
+            logger.exception(
+                "DOI: '%s' has exceeded the retry threshold and will not be "
+                "attempted again.",
+                self.doi,
+            )
+        else:
+            self.update_status(status_code=Status.UNPROCESSED.value)
 
     def update_status(self, status_code: int) -> None:
         """Update status for DOI item in DOI table.

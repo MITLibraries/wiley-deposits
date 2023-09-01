@@ -257,80 +257,41 @@ class SQSClient:
             sqs_message: An SQS result message to be processed.
             retry_threshold: The number of times to attempt processing an article.
         """
-        if (
-            self.valid_result_message_attributes(sqs_message=sqs_message)
-            and self.valid_result_message_body(sqs_message=sqs_message)
-            and sqs_message.get("ReceiptHandle")
-        ):
-            doi = sqs_message["MessageAttributes"]["PackageID"]["StringValue"]
-            doi_process_attempt = DoiProcessAttempt.get(doi)
-            message_body = json.loads(str(sqs_message["Body"]))
-            receipt_handle = sqs_message["ReceiptHandle"]
-            if message_body["ResultType"] == "error":
-                self.error_message(
-                    doi=doi,
-                    message_body=message_body,
-                    receipt_handle=receipt_handle,
-                    doi_process_attempt=doi_process_attempt,
-                    retry_threshold=retry_threshold,
-                )
-            else:
-                self.success_message(
-                    doi=doi,
-                    message_body=message_body,
-                    receipt_handle=receipt_handle,
-                    doi_process_attempt=doi_process_attempt,
-                )
-        else:
+        if not self.valid_sqs_message(sqs_message):
             raise InvalidSQSMessageError
+        doi = sqs_message["MessageAttributes"]["PackageID"]["StringValue"]
+        doi_process_attempt = DoiProcessAttempt.get(doi)
 
-    def error_message(
-        self,
-        doi: str,
-        message_body: str,
-        receipt_handle: str,
-        doi_process_attempt: DoiProcessAttempt,
-        retry_threshold: str,
-    ) -> None:
-        """Process an error result message.
-
-        Args:
-            doi: The DOI of the article.
-            message_body: The body of the SQS result message.
-            receipt_handle: The receipt handle of the SQS result message.
-            doi_process_attempt: A database item represented as a PynamoDB object.
-            retry_threshold: The number of times to attempt processing an article.
-        """
+        message_body = json.loads(str(sqs_message["Body"]))
+        receipt_handle = sqs_message["ReceiptHandle"]
+        self.delete(receipt_handle)
         logger.exception("DOI: %s, Result: %s", doi, message_body)
-        self.delete(receipt_handle)
-        if doi_process_attempt.attempts_exceeded(retry_threshold=int(retry_threshold)):
-            doi_process_attempt.update_status(status_code=Status.FAILED.value)
-            logger.exception(
-                "DOI: '%s' has exceeded the retry threshold and will not be "
-                "attempted again.",
-                doi,
-            )
+
+        if message_body["ResultType"] == "error":
+            doi_process_attempt.sqs_error_update_status(int(retry_threshold))
         else:
-            doi_process_attempt.update_status(status_code=Status.UNPROCESSED.value)
+            doi_process_attempt.update_status(status_code=Status.SUCCESS.value)
 
-    def success_message(
-        self,
-        doi: str,
-        message_body: str,
-        receipt_handle: str,
-        doi_process_attempt: DoiProcessAttempt,
-    ) -> None:
-        """Process an success result message.
-
-        Args:
-            doi: The DOI of the Article.
-            message_body: The body of the SQS result message.
-            receipt_handle: The receipt handle of the SQS result message.
-            doi_process_attempt: A database item represented as a PynamoDB object.
-        """
-        logger.info("DOI: %s, Result: %s", doi, message_body)
-        self.delete(receipt_handle)
-        doi_process_attempt.update_status(status_code=Status.SUCCESS.value)
+    def receive(self) -> Iterator[MessageTypeDef]:
+        """Receive messages from SQS queue."""
+        logger.debug("Receiving messages from SQS queue: %s", self.queue_name)
+        while True:
+            response = self.client.receive_message(
+                QueueUrl=f"{self.base_url}{self.queue_name}",
+                MaxNumberOfMessages=10,
+                MessageAttributeNames=["All"],
+            )
+            if "Messages" in response:
+                for message in response["Messages"]:
+                    logger.debug(
+                        "Message retrieved from SQS queue %s: %s",
+                        self.queue_name,
+                        message,
+                    )
+                    yield message
+            else:
+                logger.debug("No more messages from SQS queue: %s", self.queue_name)
+                break
 
     def send(
         self,
@@ -351,29 +312,6 @@ class SQSClient:
         )
         logger.debug("Response from SQS queue: %s", response)
         return response
-
-    def receive(
-        self,
-    ) -> Iterator[MessageTypeDef]:
-        """Receive messages from SQS queue."""
-        logger.debug("Receiving messages from SQS queue: %s", self.queue_name)
-        while True:
-            response = self.client.receive_message(
-                QueueUrl=f"{self.base_url}{self.queue_name}",
-                MaxNumberOfMessages=10,
-                MessageAttributeNames=["All"],
-            )
-            if "Messages" in response:
-                for message in response["Messages"]:
-                    logger.debug(
-                        "Message retrieved from SQS queue %s: %s",
-                        self.queue_name,
-                        message,
-                    )
-                    yield message
-            else:
-                logger.debug("No more messages from SQS queue: %s", self.queue_name)
-                break
 
     @staticmethod
     def valid_result_message_attributes(sqs_message: MessageTypeDef) -> bool:
@@ -409,6 +347,24 @@ class SQSClient:
             valid = True
         else:
             logger.exception("Failed to parse SQS message body: %s", sqs_message)
+        return valid
+
+    def valid_sqs_message(self, sqs_message: MessageTypeDef) -> bool:
+        """Validate that an SQS message is formatted as expected.
+
+        Args:
+            sqs_message:  An SQS message to be evaluated.
+
+        """
+        valid = False
+        if (
+            self.valid_result_message_attributes(sqs_message=sqs_message)
+            and self.valid_result_message_body(sqs_message=sqs_message)
+            and sqs_message.get("ReceiptHandle")
+        ):
+            valid = True
+        else:
+            logger.exception("Failed to parse SQS message: %s", sqs_message)
         return valid
 
 

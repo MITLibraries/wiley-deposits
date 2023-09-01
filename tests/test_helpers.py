@@ -151,67 +151,6 @@ def test_sqs_delete_success(
     assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
 
 
-def test_sqs_error_message_above_retry_threshold_set_failed_status(
-    caplog,
-    mocked_sqs_output,
-    result_message_body_error,
-    result_message_attributes_error,
-    sample_doiprocessattempt,
-    sqs_client,
-):
-    sqs_client.send(
-        message_attributes=result_message_attributes_error,
-        message_body=result_message_body_error,
-    )
-    messages = sqs_client.receive()
-    receipt_handle = next(messages)["ReceiptHandle"]
-    sample_doiprocessattempt.doi = "222.2/2222"
-    sqs_client.error_message(
-        doi="222.2/2222",
-        message_body=result_message_body_error,
-        receipt_handle=receipt_handle,
-        doi_process_attempt=sample_doiprocessattempt,
-        retry_threshold="0",
-    )
-    assert sample_doiprocessattempt.get("222.2/2222").status == Status.FAILED.value
-    assert (
-        "DOI: '222.2/2222' has exceeded the retry threshold and will not be "
-        "attempted again" in caplog.text
-    )
-
-
-def test_sqs_error_message_below_retry_threshold_set_unprocessed_status(
-    caplog,
-    mocked_sqs_output,
-    result_message_body_error,
-    result_message_attributes_error,
-    sample_doiprocessattempt,
-    sqs_client,
-):
-    sqs_client.send(
-        message_attributes=result_message_attributes_error,
-        message_body=result_message_body_error,
-    )
-    messages = sqs_client.receive()
-    receipt_handle = next(messages)["ReceiptHandle"]
-    sample_doiprocessattempt.doi = "222.2/2222"
-    sqs_client.error_message(
-        doi="222.2/2222",
-        message_body=result_message_body_error,
-        receipt_handle=receipt_handle,
-        doi_process_attempt=sample_doiprocessattempt,
-        retry_threshold="30",
-    )
-    assert sample_doiprocessattempt.get("222.2/2222").status == Status.UNPROCESSED.value
-    assert (
-        'DOI: 222.2/2222, Result: {"ResultType": "error", "ErrorTimestamp": '
-        '"Thu Sep 09 18:32:39 UTC 2021", "ErrorInfo": "Error occurred while posting '
-        'item to DSpace", "ExceptionMessage": "500 Server Error: Internal Server Error", '
-        '"ExceptionTraceback": "Full unformatted stack trace of the Exception"}'
-        in caplog.text
-    )
-
-
 def test_sqs_process_result_message_error(
     mocked_sqs_output,
     sqs_client,
@@ -311,30 +250,6 @@ def test_sqs_send_success(
         message_body=submission_message_body,
     )
     assert response["ResponseMetadata"]["HTTPStatusCode"] == HTTPStatus.OK
-
-
-def test_sqs_success_message(
-    mocked_sqs_output,
-    result_message_attributes_success,
-    result_message_body_success,
-    sample_doiprocessattempt,
-    sqs_client,
-):
-    sqs_client.send(
-        message_attributes=result_message_attributes_success,
-        message_body=result_message_body_success,
-    )
-    messages = sqs_client.receive()
-    receipt_handle = next(messages)["ReceiptHandle"]
-    sqs_client.success_message(
-        doi="10.1002/term.3131",
-        message_body=result_message_body_success,
-        receipt_handle=receipt_handle,
-        doi_process_attempt=sample_doiprocessattempt,
-    )
-    assert (
-        sample_doiprocessattempt.get("10.1002/term.3131").status == Status.SUCCESS.value
-    )
 
 
 def test_sqs_valid_result_message_attributes_false(mocked_sqs_input, sqs_client):
