@@ -26,34 +26,7 @@ def test_deposit_success(
             key="doi_success.csv",
         )
         assert len(s3_client.client.list_objects(Bucket="awd")["Contents"]) == 1
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "deposit",
-                "--metadata_url",
-                "http://example.com/works/",
-                "--content_url",
-                "http://example.com/doi/",
-                "--bucket",
-                "awd",
-                "--sqs_input_queue",
-                "mock-input-queue",
-                "--collection_handle",
-                "123.4/5678",
-            ],
-        )
+        result = runner.invoke(cli, ["deposit"])
         assert result.exit_code == 0
         uploaded_metadata = s3_client.client.get_object(
             Bucket="awd", Key="10.1002-term.3131.json"
@@ -90,34 +63,7 @@ def test_deposit_insufficient_metadata(
             bucket="awd",
             key="doi_insufficient_metadata.csv",
         )
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "deposit",
-                "--metadata_url",
-                "http://example.com/works/",
-                "--content_url",
-                "http://example.com/doi/",
-                "--bucket",
-                "awd",
-                "--sqs_input_queue",
-                "mock-input-queue",
-                "--collection_handle",
-                "123.4/5678",
-            ],
-        )
+        result = runner.invoke(cli, ["deposit"])
         assert result.exit_code == 0
         assert (
             "Insufficient metadata for 10.1002/nome.tadata, missing title or URL"
@@ -145,34 +91,7 @@ def test_deposit_pdf_unavailable(
             bucket="awd",
             key="doi_pdf_unavailable.csv",
         )
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "deposit",
-                "--metadata_url",
-                "http://example.com/works/",
-                "--content_url",
-                "http://example.com/doi/",
-                "--bucket",
-                "awd",
-                "--sqs_input_queue",
-                "mock-input-queue",
-                "--collection_handle",
-                "123.4/5678",
-            ],
-        )
+        result = runner.invoke(cli, ["deposit"])
         assert result.exit_code == 0
         assert "A PDF could not be retrieved for DOI: 10.1002/none.0000" in caplog.text
         assert len(s3_client.client.list_objects(Bucket="awd")["Contents"]) == 1
@@ -182,6 +101,7 @@ def test_deposit_pdf_unavailable(
 
 def test_deposit_s3_nonexistent_bucket(
     caplog,
+    monkeypatch,
     mocked_web,
     mocked_dynamodb,
     mocked_s3,
@@ -191,36 +111,8 @@ def test_deposit_s3_nonexistent_bucket(
     runner,
 ):
     with caplog.at_level(logging.DEBUG):
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "--doi_table_name",
-                "wiley-test",
-                "deposit",
-                "--metadata_url",
-                "http://example.com/works/",
-                "--content_url",
-                "http://example.com/doi/",
-                "--bucket",
-                "not-a-bucket",
-                "--sqs_input_queue",
-                "mock-input-queue",
-                "--collection_handle",
-                "123.4/5678",
-            ],
-        )
+        monkeypatch.setenv("BUCKET", "not-a-bucket")
+        result = runner.invoke(cli, ["deposit"])
         assert result.exit_code == 0
         assert (
             "Error accessing bucket: not-a-bucket, The specified bucket does not exist"
@@ -229,6 +121,7 @@ def test_deposit_s3_nonexistent_bucket(
 
 def test_deposit_dynamodb_error(
     caplog,
+    monkeypatch,
     doi_list_success,
     mocked_web,
     mocked_dynamodb,
@@ -239,41 +132,13 @@ def test_deposit_dynamodb_error(
     runner,
 ):
     with caplog.at_level(logging.INFO):
+        monkeypatch.setenv("DOI_TABLE", "not-a-table")
         s3_client.put_file(
             file_content=doi_list_success,
             bucket="awd",
             key="doi_success.csv",
         )
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "--doi_table_name",
-                "not-a-table",
-                "deposit",
-                "--metadata_url",
-                "http://example.com/works/",
-                "--content_url",
-                "http://example.com/doi/",
-                "--bucket",
-                "awd",
-                "--sqs_input_queue",
-                "mock-input-queue",
-                "--collection_handle",
-                "123.4/5678",
-            ],
-        )
+        result = runner.invoke(cli, ["deposit"])
         assert result.exit_code == 0
         assert ("Unable to read DynamoDB table") in caplog.text
 
@@ -303,28 +168,7 @@ def test_listen_success(
         )
         sample_doiprocessattempt.add_item("111.1/1111")
         sample_doiprocessattempt.add_item("222.2/2222")
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "listen",
-                "--retry_threshold",
-                "10",
-            ],
-        )
+        result = runner.invoke(cli, ["listen"])
         assert result.exit_code == 0
         assert str(result_message_body_error) in caplog.text
         assert str(result_message_body_success) in caplog.text
@@ -342,28 +186,7 @@ def test_listen_message_error(
             message_attributes={},
             message_body={},
         )
-        result = runner.invoke(
-            cli,
-            [
-                "--log_level",
-                "INFO",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_base_url",
-                "https://queue.amazonaws.com/123456789012/",
-                "--doi_table_name",
-                "wiley-test",
-                "--sqs_output_queue",
-                "mock-output-queue",
-                "--log_source_email",
-                "noreply@example.com",
-                "--log_recipient_email",
-                "mock@mock.mock",
-                "listen",
-                "--retry_threshold",
-                "10",
-            ],
-        )
+        result = runner.invoke(cli, ["listen"])
         assert result.exit_code == 0
         assert "Error while processing SQS message:" in caplog.text
         assert "Logs sent to" in caplog.text

@@ -25,10 +25,24 @@ def runner():
 
 
 @pytest.fixture(autouse=True)
-def _aws_credentials():
+def _test_env():
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"  # noqa: S105
+    os.environ["WORKSPACE"] = "test"
+    os.environ["LOG_LEVEL"] = "INFO"
+    os.environ["DOI_TABLE"] = "wiley-test"
+    os.environ["METADATA_URL"] = "http://example.com/works/"
+    os.environ["CONTENT_URL"] = "http://example.com/doi/"
+    os.environ["BUCKET"] = "awd"
+    os.environ["SQS_BASE_URL"] = "https://queue.amazonaws.com/123456789012/"
+    os.environ["SQS_INPUT_QUEUE"] = "mock-input-queue"
+    os.environ["SQS_OUTPUT_QUEUE"] = "mock-output-queue"
+    os.environ["COLLECTION_HANDLE"] = "123.4/5678"
+    os.environ["LOG_SOURCE_EMAIL"] = "noreply@example.com"
+    os.environ["LOG_RECIPIENT_EMAIL"] = "mock@mock.mock"
+    os.environ["RETRY_THRESHOLD"] = "10"
+    os.environ["SENTRY_DSN"] = "None"
 
 
 @pytest.fixture
