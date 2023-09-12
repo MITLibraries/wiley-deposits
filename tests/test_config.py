@@ -3,7 +3,7 @@ import pytest
 from awd.config import Config
 
 
-def test_config_load_config_variables_all_variables_present():
+def test_config_load_environment_variables_all_variables_present():
     config = Config()
     assert config.__dict__ == {
         "WORKSPACE": "test",
@@ -23,7 +23,7 @@ def test_config_load_config_variables_all_variables_present():
     }
 
 
-def test_config_load_config_variables_missing_variable_raises_keyerror(
+def test_config_load_environment_variables_missing_variable_raises_keyerror(
     monkeypatch, caplog
 ):
     monkeypatch.delenv("LOG_LEVEL")

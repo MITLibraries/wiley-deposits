@@ -32,20 +32,16 @@ def cli(
     ctx: click.Context,
 ) -> None:
     config = Config()
-    sentry_dsn = config.SENTRY_DSN  # type: ignore[attr-defined]
+    sentry_dsn = config.SENTRY_DSN
     if sentry_dsn and sentry_dsn.lower() != "none":
         sentry_sdk.init(
             sentry_dsn,
-            environment=config.WORKSPACE,  # type: ignore[attr-defined]
+            environment=config.WORKSPACE,
         )
     stream = io.StringIO()
     logging.basicConfig(
         format="%(asctime)s %(levelname)-8s %(message)s",
-        level=(
-            getattr(logging, config.LOG_LEVEL)  # type: ignore[attr-defined]
-            if config.LOG_LEVEL  # type: ignore[attr-defined]
-            else logging.INFO
-        ),
+        level=(getattr(logging, config.LOG_LEVEL) if config.LOG_LEVEL else logging.INFO),
         handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
     )
     ctx.ensure_object(dict)
