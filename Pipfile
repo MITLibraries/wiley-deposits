@@ -10,6 +10,7 @@ click = "*"
 sentry-sdk = "*"
 smart-open = "*"
 pynamodb = "*"
+requests = "*"
 
 [dev-packages]
 black = "*"
