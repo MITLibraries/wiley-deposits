@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Any
 
-from pynamodb.exceptions import DoesNotExist
 from requests import Response
 
 from awd.database import DoiProcessAttempt
@@ -69,29 +68,25 @@ class Article:
 
     def process(self) -> None:
         """Run the complete article processing workflow."""
-        self.check_doi_and_add_to_table()
+        self.check_status_and_increment_process_attempts()
         self.get_and_validate_crossref_metadata()
         self.create_and_validate_dspace_metadata()
         self.get_and_validate_wiley_article_content()
         self.upload_files_and_send_sqs_message()
 
-    def check_doi_and_add_to_table(self) -> None:
-        """Check if DOI should be added to table.
+    def check_status_and_increment_process_attempts(self) -> None:
+        """Check for unprocessed status.
 
-        If not present, add the DOI to the table.  Check for unprocessed status
-        and raise exception if DOI should not be retried. Increment attempts field.
+        Raise exception if DOI should not be retried. Increment process_attempts
+        field.
 
         Args:
             doi: The DOI to be checked and possibly added to the DOI table.
         """
-        try:
-            DoiProcessAttempt.get(self.doi)
-        except DoesNotExist:
-            DoiProcessAttempt.add_item(self.doi)
         self.doi_process_attempt = DoiProcessAttempt.get(self.doi)
         if not self.doi_process_attempt.has_unprocessed_status():
             raise UnprocessedStatusFalseError
-        self.doi_process_attempt.increment_attempts()
+        self.doi_process_attempt.increment_process_attempts()
 
     def valid_crossref_metadata(self, crossref_response: Response) -> bool:
         """Validate that a Crossref work record contains sufficient metadata.
@@ -108,11 +103,11 @@ class Article:
                 valid = True
                 logger.debug("Sufficient metadata downloaded for %s", self.doi)
             else:
-                logger.exception(
+                logger.error(
                     "Insufficient metadata for %s, missing title or URL", self.doi
                 )
         else:
-            logger.exception("Unable to parse %s response as JSON", self.doi)
+            logger.error("Unable to parse %s response as JSON", self.doi)
         return valid
 
     def get_and_validate_crossref_metadata(self) -> None:
@@ -215,7 +210,7 @@ class Article:
                     valid = True
             logger.debug("Valid DSpace metadata created")
         else:
-            logger.exception("Invalid DSpace metadata created: %s ", dspace_metadata)
+            logger.error("Invalid DSpace metadata created: %s ", dspace_metadata)
         return valid
 
     def create_and_validate_dspace_metadata(self) -> None:
@@ -234,11 +229,11 @@ class Article:
            wiley_response: A response from the Wiley server to be validated.
         """
         valid = False
-        if wiley_response.headers["content-type"] == "application/pdf; charset=UTF-8":
+        if wiley_response.headers["content-type"].startswith("application/pdf"):
             valid = True
             logger.debug("PDF downloaded for %s", self.doi)
         else:
-            logger.exception("A PDF could not be retrieved for DOI: %s", self.doi)
+            logger.error("A PDF could not be retrieved for DOI: %s", self.doi)
             logger.debug(
                 "Response contents retrieved from Wiley server for %s: %s",
                 self.doi,

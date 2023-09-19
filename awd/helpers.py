@@ -15,6 +15,7 @@ from awd.status import Status
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+    from io import StringIO
 
     from mypy_boto3_s3.type_defs import PutObjectOutputTypeDef
     from mypy_boto3_ses.type_defs import SendRawEmailResponseTypeDef
@@ -366,6 +367,16 @@ class SQSClient:
         else:
             logger.exception("Failed to parse SQS message: %s", sqs_message)
         return valid
+
+
+def filter_log_stream(stream: StringIO) -> str:
+    """Filter log stream to only ERROR messages for stakeholder email.
+
+    Args:
+        stream: A log stream used to generate an attachment for the stakeholder email.
+    """
+    stream.seek(0)
+    return "".join([line for line in stream if "ERROR" in line])
 
 
 def get_dois_from_spreadsheet(doi_csv_file: str) -> Iterator[str]:

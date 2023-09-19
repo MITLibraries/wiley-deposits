@@ -100,10 +100,10 @@ def sample_article():
 @freeze_time("2023-08-21")
 def sample_doiprocessattempt(mocked_dynamodb):
     return DoiProcessAttempt(
-        attempts=0,
+        process_attempts=0,
         doi="10.1002/term.3131",
         last_modified=datetime.datetime.now(tz=datetime.UTC).strftime(config.DATE_FORMAT),
-        status=1,
+        status_code=1,
     )
 
 
@@ -141,8 +141,6 @@ def mocked_dynamodb():
             ],
         )
         DoiProcessAttempt.set_table_name("wiley-test")
-        DoiProcessAttempt.add_item("10.1002/term.3131")
-        DoiProcessAttempt.add_item("222.2/2222")
         yield dynamodb
 
 

@@ -1,12 +1,14 @@
 import logging
 from email.mime.multipart import MIMEMultipart
 from http import HTTPStatus
+from io import StringIO
 
 import pytest
 from botocore.exceptions import ClientError
 
 from awd.helpers import (
     InvalidSQSMessageError,
+    filter_log_stream,
     get_crossref_response_from_doi,
     get_dois_from_spreadsheet,
     get_wiley_response,
@@ -158,6 +160,7 @@ def test_sqs_process_result_message_error(
     result_message_attributes_error,
     result_message_body_error,
 ):
+    sample_doiprocessattempt.add_item(doi="222.2/2222")
     sqs_client.send(
         message_attributes=result_message_attributes_error,
         message_body=result_message_body_error,
@@ -168,7 +171,9 @@ def test_sqs_process_result_message_error(
         sqs_message=next(messages),
         retry_threshold=30,
     )
-    assert sample_doiprocessattempt.get("222.2/2222").status == Status.UNPROCESSED.value
+    assert (
+        sample_doiprocessattempt.get("222.2/2222").status_code == Status.UNPROCESSED.value
+    )
 
 
 def test_sqs_process_result_message_raises_invalid_sqs_exception(
@@ -194,6 +199,7 @@ def test_sqs_process_result_message_success(
     result_message_attributes_success,
     result_message_body_success,
 ):
+    sample_doiprocessattempt.add_item(doi="10.1002/term.3131")
     sqs_client.send(
         message_attributes=result_message_attributes_success,
         message_body=result_message_body_success,
@@ -204,7 +210,8 @@ def test_sqs_process_result_message_success(
         retry_threshold=30,
     )
     assert (
-        sample_doiprocessattempt.get("10.1002/term.3131").status == Status.SUCCESS.value
+        sample_doiprocessattempt.get("10.1002/term.3131").status_code
+        == Status.SUCCESS.value
     )
 
 
@@ -273,6 +280,10 @@ def test_sqs_valid_result_message_body_true(
 
 
 # Function tests
+def test_filter_log_stream():
+    assert filter_log_stream(StringIO("ERROR\nINFO\nDEBUG\n")) == "ERROR\n"
+
+
 def test_get_crossref_work_from_doi(mocked_web):
     response = get_crossref_response_from_doi(
         url="http://example.com/works/", doi="10.1002/term.3131"
