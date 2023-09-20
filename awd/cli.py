@@ -41,7 +41,7 @@ def cli(
         )
     stream = io.StringIO()
     logging.basicConfig(
-        format="%(asctime)s %(levelname)-8s %(message)s",
+        format="%(levelname)-8s %(asctime)s %(message)s",
         level=(getattr(logging, config.LOG_LEVEL) if config.LOG_LEVEL else logging.INFO),
         handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
     )
@@ -55,9 +55,10 @@ def cli(
 def deposit(
     ctx: click.Context,
 ) -> None:
-    """Process a text file of DOIs to retrieve metadata and PDFs and send to SQS queue.
+    """Process DOIs from .csv files and unprocessed DOIs from DynamoDB.
 
-    Errors generated during the process are emailed to stakeholders.
+    Retrieve metadata and PDFs for the DOI and send a message to an SQS
+    queue. Errors generated during the process are emailed to stakeholders.
     """
     date = datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
     stream = ctx.obj["stream"]
@@ -83,18 +84,15 @@ def deposit(
         logger.exception("Unable to read DynamoDB table")
         return  # exit application
 
-    unprocessed_dois = DoiProcessAttempt.retrieve_unprocessed_dois()
+    unprocessed_dois = set()
+    unprocessed_dois.update(DoiProcessAttempt.retrieve_unprocessed_dois())
 
     for doi_file in s3_client.retrieve_file_type_from_bucket(
         config.BUCKET, ".csv", "archived"
     ):
-        for doi in [
-            doi
-            for doi in get_dois_from_spreadsheet(f"s3://{config.BUCKET}/{doi_file}")
-            if doi not in unprocessed_dois
-        ]:
+        for doi in get_dois_from_spreadsheet(f"s3://{config.BUCKET}/{doi_file}"):
             DoiProcessAttempt.check_doi_and_add_to_table(doi)
-            unprocessed_dois.append(doi)
+            unprocessed_dois.add(doi)
 
         s3_client.archive_file_with_new_key(
             bucket=config.BUCKET, key=doi_file, archived_key_prefix="archived"

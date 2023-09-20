@@ -376,7 +376,7 @@ def filter_log_stream(stream: StringIO) -> str:
         stream: A log stream used to generate an attachment for the stakeholder email.
     """
     stream.seek(0)
-    return "".join([line for line in stream if "ERROR" in line])
+    return "".join([line for line in stream if line.startswith("ERROR")])
 
 
 def get_dois_from_spreadsheet(doi_csv_file: str) -> Iterator[str]:
