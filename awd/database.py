@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from pynamodb.attributes import NumberAttribute, UnicodeAttribute
+from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 
 from awd.config import DATE_FORMAT
@@ -20,9 +21,9 @@ class DoiProcessAttempt(Model):
         table_name = "None"
 
     doi = UnicodeAttribute(hash_key=True)
-    attempts = NumberAttribute()
+    process_attempts = NumberAttribute()
     last_modified = UnicodeAttribute()
-    status = NumberAttribute()
+    status_code = NumberAttribute()
 
     @classmethod
     def add_item(cls, doi: str) -> dict[str, Any]:
@@ -33,35 +34,60 @@ class DoiProcessAttempt(Model):
         """
         response = cls(
             doi=doi,
-            attempts=0,
+            process_attempts=0,
             last_modified=datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT),
-            status=Status.UNPROCESSED.value,
+            status_code=Status.UNPROCESSED.value,
         ).save()
         logger.debug("%s added to table", doi)
         return response
 
-    def attempts_exceeded(self, retry_threshold: int) -> bool:
-        """Validate whether a DOI has exceeded the retry threshold.
+    @classmethod
+    def check_doi_and_add_to_table(cls, doi: str) -> None:
+        """Check if DOI should be added to table.
+
+        If not present, add the DOI to the table.
 
         Args:
-            retry_threshold: The number of attempts that should be
-            made before setting the item to a failed status.
+            doi: The DOI to be checked and possibly added to the DOI table.
         """
-        attempts_exceeded = False
-        if self.attempts >= retry_threshold:
-            attempts_exceeded = True
-        return attempts_exceeded
+        try:
+            cls.get(doi)
+        except DoesNotExist:
+            cls.add_item(doi)
 
     def has_unprocessed_status(self) -> bool:
         """Validate that a DOI has unprocessed status in the DOI table."""
-        return self.get(self.doi).status == Status.UNPROCESSED.value
+        return self.get(self.doi).status_code == Status.UNPROCESSED.value
 
-    def increment_attempts(self) -> None:
-        """Increment attempts for DOI item in DOI table."""
-        self.attempts += 1
+    def increment_process_attempts(self) -> None:
+        """Increment process attempts for DOI item in DOI table."""
+        self.process_attempts += 1
         self.last_modified = datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
         self.save()
-        logger.debug("%s attempts updated to: %s", self.doi, self.attempts)
+        logger.debug(
+            "%s process attempts updated to: %s", self.doi, self.process_attempts
+        )
+
+    def process_attempts_exceeded(self, retry_threshold: int) -> bool:
+        """Validate whether a DOI has exceeded the retry threshold.
+
+        Args:
+            retry_threshold: The number of process attempts that should be
+            made before setting the item to a failed status.
+        """
+        process_attempts_exceeded = False
+        if self.process_attempts >= retry_threshold:
+            process_attempts_exceeded = True
+        return process_attempts_exceeded
+
+    @classmethod
+    def retrieve_unprocessed_dois(cls) -> list[str]:
+        """Retrieve all unprocessed DOI items from database table."""
+        return [
+            item.doi
+            for item in cls.scan()
+            if item.status_code == Status.UNPROCESSED.value
+        ]
 
     @classmethod
     def set_table_name(cls, table_name: str) -> None:
@@ -79,10 +105,10 @@ class DoiProcessAttempt(Model):
         """Update status for error result message.
 
         Args:
-            retry_threshold: The number of attempts that should be
+            retry_threshold: The number of process attempts that should be
             made before setting the item to a failed status.
         """
-        if self.attempts_exceeded(retry_threshold=retry_threshold):
+        if self.process_attempts_exceeded(retry_threshold=retry_threshold):
             self.update_status(status_code=Status.FAILED.value)
             logger.exception(
                 "DOI: '%s' has exceeded the retry threshold and will not be "
@@ -98,7 +124,7 @@ class DoiProcessAttempt(Model):
         Args:
             status_code: The status code to be set for the item.
         """
-        self.status = status_code
+        self.status_code = status_code
         self.last_modified = datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
         self.save()
-        logger.debug("%s status updated to: %s", self.doi, self.status)
+        logger.debug("%s status updated to: %s", self.doi, self.status_code)

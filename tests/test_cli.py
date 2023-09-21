@@ -119,7 +119,7 @@ def test_deposit_s3_nonexistent_bucket(
         ) in caplog.text
 
 
-def test_deposit_dynamodb_error(
+def test_deposit_wrong_dynamodb_table_exits(
     caplog,
     monkeypatch,
     doi_list_success,

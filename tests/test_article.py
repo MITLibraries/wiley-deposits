@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
 import pytest
-from pynamodb.exceptions import DoesNotExist
 from requests import Response
 
 from awd.article import (
@@ -13,26 +12,25 @@ from awd.article import (
 from awd.status import Status
 
 
-def test_check_doi_and_add_to_table_success(
+def test_check_status_and_increment_process_attempts_success(
     mocked_dynamodb,
     sample_article,
     sample_doiprocessattempt,
 ):
-    with pytest.raises(DoesNotExist):
-        sample_doiprocessattempt.get("10.1002/none.0000")
-    sample_article.doi = "10.1002/none.0000"
-    sample_article.check_doi_and_add_to_table()
-    assert sample_doiprocessattempt.get("10.1002/none.0000").attempts == 1
+    sample_doiprocessattempt.add_item(doi="10.1002/term.3131")
+    assert sample_doiprocessattempt.get("10.1002/term.3131").process_attempts == 0
+    sample_article.check_status_and_increment_process_attempts()
+    assert sample_doiprocessattempt.get("10.1002/term.3131").process_attempts == 1
 
 
-def test_check_doi_and_add_to_table_unprocessed_status_false_raises_exception(
+def test_check_status_and_increment_process_attempts_false_raises_exception(
     mocked_dynamodb,
     sample_article,
     sample_doiprocessattempt,
 ):
     sample_doiprocessattempt.update_status(status_code=Status.MESSAGE_SENT.value)
     with pytest.raises(UnprocessedStatusFalseError):
-        sample_article.check_doi_and_add_to_table()
+        sample_article.check_status_and_increment_process_attempts()
 
 
 def test_create_dspace_metadata_minimum_metadata(

@@ -5,7 +5,7 @@ import logging
 import click
 import sentry_sdk
 from botocore.exceptions import ClientError
-from pynamodb.exceptions import GetError
+from pynamodb.exceptions import DoesNotExist, GetError
 
 from awd.article import (
     Article,
@@ -20,6 +20,7 @@ from awd.helpers import (
     S3Client,
     SESClient,
     SQSClient,
+    filter_log_stream,
     get_dois_from_spreadsheet,
 )
 
@@ -40,7 +41,7 @@ def cli(
         )
     stream = io.StringIO()
     logging.basicConfig(
-        format="%(asctime)s %(levelname)-8s %(message)s",
+        format="%(levelname)-8s %(asctime)s %(message)s",
         level=(getattr(logging, config.LOG_LEVEL) if config.LOG_LEVEL else logging.INFO),
         handlers=[logging.StreamHandler(), logging.StreamHandler(stream)],
     )
@@ -54,9 +55,10 @@ def cli(
 def deposit(
     ctx: click.Context,
 ) -> None:
-    """Process a text file of DOIs to retrieve metadata and PDFs and send to SQS queue.
+    """Process DOIs from .csv files and unprocessed DOIs from DynamoDB.
 
-    Errors generated during the process are emailed to stakeholders.
+    Retrieve metadata and PDFs for the DOI and send a message to an SQS
+    queue. Errors generated during the process are emailed to stakeholders.
     """
     date = datetime.datetime.now(tz=datetime.UTC).strftime(DATE_FORMAT)
     stream = ctx.obj["stream"]
@@ -76,51 +78,64 @@ def deposit(
             e.response["Error"]["Message"],
         )
         return  # Unable to access S3 bucket, exit application
+
     DoiProcessAttempt.set_table_name(config.DOI_TABLE)
     if not DoiProcessAttempt.exists():
         logger.exception("Unable to read DynamoDB table")
         return  # exit application
 
+    unprocessed_dois = set()
+    unprocessed_dois.update(DoiProcessAttempt.retrieve_unprocessed_dois())
+
     for doi_file in s3_client.retrieve_file_type_from_bucket(
         config.BUCKET, ".csv", "archived"
     ):
-        dois = get_dois_from_spreadsheet(f"s3://{config.BUCKET}/{doi_file}")
-        for doi in dois:
-            logger.error(doi)
-            article = Article(
-                doi=doi,
-                metadata_url=config.METADATA_URL,
-                content_url=config.CONTENT_URL,
-                s3_client=s3_client,
-                bucket=config.BUCKET,
-                sqs_client=sqs_client,
-                sqs_base_url=config.SQS_BASE_URL,
-                sqs_input_queue=config.SQS_INPUT_QUEUE,
-                sqs_output_queue=config.SQS_OUTPUT_QUEUE,
-                collection_handle=config.COLLECTION_HANDLE,
-            )
-            try:
-                article.process()
-            except (
-                ClientError,
-                GetError,
-                InvalidArticleContentResponseError,
-                InvalidCrossrefMetadataError,
-                InvalidDSpaceMetadataError,
-                UnprocessedStatusFalseError,
-            ):
-                logger.exception(article.doi)
-                continue
+        for doi in get_dois_from_spreadsheet(f"s3://{config.BUCKET}/{doi_file}"):
+            DoiProcessAttempt.check_doi_and_add_to_table(doi)
+            unprocessed_dois.add(doi)
+
         s3_client.archive_file_with_new_key(
             bucket=config.BUCKET, key=doi_file, archived_key_prefix="archived"
         )
+
+    for doi in unprocessed_dois:
+        article = Article(
+            doi=doi,
+            metadata_url=config.METADATA_URL,
+            content_url=config.CONTENT_URL,
+            s3_client=s3_client,
+            bucket=config.BUCKET,
+            sqs_client=sqs_client,
+            sqs_base_url=config.SQS_BASE_URL,
+            sqs_input_queue=config.SQS_INPUT_QUEUE,
+            sqs_output_queue=config.SQS_OUTPUT_QUEUE,
+            collection_handle=config.COLLECTION_HANDLE,
+        )
+        try:
+            article.process()
+        except (
+            InvalidArticleContentResponseError,
+            InvalidCrossrefMetadataError,
+            InvalidDSpaceMetadataError,
+            UnprocessedStatusFalseError,
+        ):
+            continue
+        except (
+            ClientError,
+            DoesNotExist,
+            GetError,
+        ):
+            logger.exception("AWS exception for %s, skipped processing", doi)
+            continue
     logger.debug("Submission process has completed")
 
     # Send logs as email via SES
+    filtered_log = filter_log_stream(stream=stream)
+
     ses_client = SESClient(AWS_REGION_NAME)
     ses_client.create_and_send_email(
         subject=f"Automated Wiley deposit errors {date}",
-        attachment_content=stream.getvalue(),
+        attachment_content=filtered_log,
         attachment_name=f"{date}_submission_log.txt",
         source_email_address=config.LOG_SOURCE_EMAIL,
         recipient_email_address=config.LOG_RECIPIENT_EMAIL,
