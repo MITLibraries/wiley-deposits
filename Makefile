@@ -51,6 +51,12 @@ run-listen-dev: ## Run the dev listen command
 	aws ecs run-task --cluster DSS-wiley-dev --task-definition DSS-wiley-dev --network-configuration "awsvpcConfiguration={subnets=[subnet-0488e4996ddc8365b,subnet-022e9ea19f5f93e65],securityGroups=[sg-044033bf5f102c544],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
 
 
+run-deposit-stage: ## Run the stage deposit command
+	aws ecs run-task --cluster DSS-wiley-stage --task-definition DSS-wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-05df31ac28dd1a4b0,subnet-04cfa272d4f41dc8a],securityGroups=[sg-0f64d9a1101d544d1],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["deposit"]}]}'
+
+run-listen-stage: ## Run the stage listen command
+	aws ecs run-task --cluster DSS-wiley-stage --task-definition DSS-wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-05df31ac28dd1a4b0,subnet-04cfa272d4f41dc8a],securityGroups=[sg-0f64d9a1101d544d1],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
+
 ### Dependency commands ###
 install: ## Install script and dependencies
 	pipenv install --dev

@@ -266,7 +266,7 @@ class SQSClient:
         message_body = json.loads(str(sqs_message["Body"]))
         receipt_handle = sqs_message["ReceiptHandle"]
         self.delete(receipt_handle)
-        logger.exception("DOI: %s, Result: %s", doi, message_body)
+        logger.info("DOI: %s, Result: %s", doi, message_body)
 
         if message_body["ResultType"] == "error":
             doi_process_attempt.sqs_error_update_status(int(retry_threshold))
