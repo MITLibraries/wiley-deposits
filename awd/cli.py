@@ -127,7 +127,7 @@ def deposit(
         ):
             logger.exception("AWS exception for %s, skipped processing", doi)
             continue
-    logger.debug("Submission process has completed")
+    logger.info("Submission process has completed")
 
     # Send logs as email via SES
     filtered_log = filter_log_stream(stream=stream)
@@ -140,6 +140,7 @@ def deposit(
         source_email_address=config.LOG_SOURCE_EMAIL,
         recipient_email_address=config.LOG_RECIPIENT_EMAIL,
     )
+    logger.info("Application exiting")
 
 
 @cli.command()
@@ -178,3 +179,4 @@ def listen(
         source_email_address=config.LOG_SOURCE_EMAIL,
         recipient_email_address=config.LOG_RECIPIENT_EMAIL,
     )
+    logger.info("Application exiting")
