@@ -57,6 +57,12 @@ run-deposit-stage: ## Run the stage deposit command
 run-listen-stage: ## Run the stage listen command
 	aws ecs run-task --cluster DSS-wiley-stage --task-definition DSS-wiley-stage --network-configuration "awsvpcConfiguration={subnets=[subnet-05df31ac28dd1a4b0,subnet-04cfa272d4f41dc8a],securityGroups=[sg-0f64d9a1101d544d1],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
 
+run-deposit-prod: ## Run the prod deposit command
+	aws ecs run-task --cluster DSS-wiley-prod --task-definition DSS-wiley-prod --network-configuration "awsvpcConfiguration={subnets=[subnet-042726f373a7c5a79,subnet-05ab0e5c2bfcd748f],securityGroups=[sg-0325d8c490a870a90],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["deposit"]}]}'
+
+run-listen-prod: ## Run the prod listen command
+	aws ecs run-task --cluster DSS-wiley-prod --task-definition DSS-wiley-prod --network-configuration "awsvpcConfiguration={subnets=[subnet-042726f373a7c5a79,subnet-05ab0e5c2bfcd748f],securityGroups=[sg-0325d8c490a870a90],assignPublicIp=DISABLED}" --launch-type FARGATE --region us-east-1 --overrides '{"containerOverrides": [{"name": "wiley","command": ["listen"]}]}'
+
 ### Dependency commands ###
 install: ## Install script and dependencies
 	pipenv install --dev
