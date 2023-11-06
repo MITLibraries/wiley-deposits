@@ -18,12 +18,12 @@
     "default": {
         "boto3": {
             "hashes": [
-                "sha256:7d17f987a8b4f804e5ae509a30589736a72c6db7b0e2fb1338997128fdc9a3ec",
-                "sha256:8db91c0648c9dcde1cf7fb4c15cd50da1fdef573595a9b9c769a303c7531b9a6"
+                "sha256:aa970b1571321846543a6e615848352fe7621f1cb96b4454e919421924af95f7",
+                "sha256:ff8df4bb5aeb69acc64959a74b31042bfc52d64ca77dbe845a72c8062c48d179"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.7'",
-            "version": "==1.28.67"
+            "version": "==1.28.78"
         },
         "boto3-stubs": {
             "extras": [
@@ -39,11 +39,11 @@
         },
         "botocore": {
             "hashes": [
-                "sha256:487fb6ee4a6612613da370599b1a1aca0e159dd9e94b2e8aaa8e6ad9cc546ded",
-                "sha256:ab3b73a2e03efa1c534a94f8db4a5cf45629a53e5478d2d154b0a3e2ffb05249"
+                "sha256:320c70bc412157813c2cf60217a592b4b345f8e97e4bf3b1ce49b6be69ed8965",
+                "sha256:a9ca8deeb3f47a10a25637859fee8d81cac2db37ace819d24471279e44879547"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==1.31.67"
+            "version": "==1.31.78"
         },
         "botocore-stubs": {
             "hashes": [
@@ -326,7 +326,7 @@
                 "sha256:c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84",
                 "sha256:fdb6d215c776278489906c2f8916e6e7d4f5a9b602ccbcfdf7f016fc8da0596e"
             ],
-            "markers": "python_version >= '3.7'",
+            "markers": "python_version >= '3.6'",
             "version": "==2.0.7"
         }
     },
