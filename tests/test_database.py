@@ -2,9 +2,8 @@ from awd.status import Status
 
 
 def test_add_item(mocked_dynamodb, sample_doiprocessattempt):
-    assert sample_doiprocessattempt.add_item(doi="222.2/2222") == {
-        "ConsumedCapacity": {"CapacityUnits": 1.0, "TableName": "wiley-test"}
-    }
+    sample_doiprocessattempt.add_item(doi="222.2/2222")
+    assert sample_doiprocessattempt.get("222.2/2222").status_code == 1
 
 
 def test_has_unprocessed_status_true(sample_doiprocessattempt):
