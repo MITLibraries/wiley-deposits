@@ -6,10 +6,11 @@ import pytest
 import requests_mock
 from click.testing import CliRunner
 from freezegun import freeze_time
-from moto import mock_dynamodb, mock_iam, mock_s3, mock_ses, mock_sqs
+from moto import mock_aws
 
 from awd import config
 from awd.article import Article
+from awd.config import Config
 from awd.database import DoiProcessAttempt
 from awd.helpers import (
     S3Client,
@@ -45,8 +46,13 @@ def _test_environment(monkeypatch):
 
 
 @pytest.fixture
+def config_instance() -> Config:
+    return Config()
+
+
+@pytest.fixture
 def test_aws_user():
-    with mock_iam():
+    with mock_aws():
         user_name = "test-user"
         policy_document = {
             "Version": "2012-10-17",
@@ -128,7 +134,7 @@ def sqs_client():
 
 @pytest.fixture
 def mocked_dynamodb():
-    with mock_dynamodb():
+    with mock_aws():
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
         dynamodb.create_table(
             BillingMode="PAY_PER_REQUEST",
@@ -146,7 +152,7 @@ def mocked_dynamodb():
 
 @pytest.fixture
 def mocked_invalid_dynamodb():
-    with mock_dynamodb():
+    with mock_aws():
         dynamodb = boto3.client("dynamodb", region_name="us-east-1")
         dynamodb.create_table(
             BillingMode="PAY_PER_REQUEST",
@@ -163,7 +169,7 @@ def mocked_invalid_dynamodb():
 
 @pytest.fixture
 def mocked_s3():
-    with mock_s3():
+    with mock_aws():
         s3 = boto3.client("s3", region_name="us-east-1")
         s3.create_bucket(Bucket="awd")
         yield s3
@@ -171,7 +177,7 @@ def mocked_s3():
 
 @pytest.fixture
 def mocked_ses():
-    with mock_ses():
+    with mock_aws():
         ses = boto3.client("ses", region_name="us-east-1")
         ses.verify_email_identity(EmailAddress="noreply@example.com")
         yield ses
@@ -181,7 +187,7 @@ def mocked_ses():
 def mocked_sqs_input(
     sqs_client, result_message_attributes_error, result_message_body_error
 ):
-    with mock_sqs():
+    with mock_aws():
         sqs = boto3.resource("sqs", region_name="us-east-1")
         sqs.create_queue(QueueName="mock-input-queue")
         yield sqs
@@ -189,7 +195,7 @@ def mocked_sqs_input(
 
 @pytest.fixture
 def mocked_sqs_output():
-    with mock_sqs():
+    with mock_aws():
         sqs = boto3.resource("sqs", region_name="us-east-1")
         sqs.create_queue(QueueName="mock-output-queue")
         yield sqs

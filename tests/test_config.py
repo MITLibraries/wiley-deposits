@@ -1,35 +1,31 @@
+import io
+
 import pytest
 
-from awd.config import Config
+
+def test_config_env_var_access_success(config_instance):
+    assert config_instance.WORKSPACE == "test"
 
 
-def test_config_load_environment_variables_all_variables_present():
-    config = Config()
-    assert config.__dict__ == {
-        "WORKSPACE": "test",
-        "LOG_LEVEL": "INFO",
-        "DOI_TABLE": "wiley-test",
-        "METADATA_URL": "http://example.com/works/",
-        "CONTENT_URL": "http://example.com/doi/",
-        "BUCKET": "awd",
-        "SQS_BASE_URL": "https://queue.amazonaws.com/123456789012/",
-        "SQS_INPUT_QUEUE": "mock-input-queue",
-        "SQS_OUTPUT_QUEUE": "mock-output-queue",
-        "COLLECTION_HANDLE": "123.4/5678",
-        "LOG_SOURCE_EMAIL": "noreply@example.com",
-        "LOG_RECIPIENT_EMAIL": "mock@mock.mock",
-        "RETRY_THRESHOLD": "10",
-        "SENTRY_DSN": "None",
-    }
+def test_config_env_var_access_error(config_instance):
+    with pytest.raises(
+        AttributeError, match="'DOES_NOT_EXIST' not a valid configuration variable"
+    ):
+        _ = config_instance.DOES_NOT_EXIST
 
 
-def test_config_load_environment_variables_missing_variable_raises_keyerror(
-    monkeypatch, caplog
-):
-    monkeypatch.delenv("LOG_LEVEL")
-    with pytest.raises(KeyError):
-        Config()
+def test_config_check_required_env_vars_success(config_instance):
+    config_instance.check_required_env_vars()
+
+
+def test_config_check_required_env_vars_error(monkeypatch, config_instance):
+    monkeypatch.delenv("WORKSPACE")
+    with pytest.raises(OSError, match="Missing required environment variables"):
+        config_instance.check_required_env_vars()
+
+
+def test_config_configure_logger(config_instance):
     assert (
-        "Config error: env variable 'LOG_LEVEL' is required, please set it."
-        in caplog.text
+        config_instance.configure_logger(stream=io.StringIO())
+        == "Logger 'root' configured with level=INFO"
     )

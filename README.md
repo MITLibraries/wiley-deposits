@@ -1,143 +1,101 @@
 # wiley-deposits
 
+Wiley-Deposits is a Python CLI application for processing MIT-affiliated author manuscripts from Wiley. It is part of a workflow that uploads Wiley publications to [DSpace@MIT](https://dspace.mit.edu/) via the [Dspace Submission Service (DSS)](https://github.com/MITLibraries/dspace-submission-service).
 
-## `deposit`
+At a high level, this is accomplished by:
 
-### Retrieval of Unprocessed DOIs
+1. Running the `deposit` command to retrieve metadata and files from Wiley and submit messages to DSS.
 
-This flowchart describes the sources of the DOIs that are processed by the Wiley `deposit` workflow.
+2. Running DSS to process messages from previous step and upload metadata and bitstreams (files) to DSpace@MIT.
 
-```mermaid
----
-title:
----
+3. Running the `listen` command to update a DynamoDB table that tracks all Wiley deposits.
 
-flowchart LR
-    %% aws utilities
-    dynamodb["Amazon DynamoDB"]
-    s3["Amazon S3"]
+Diagrams describing the workflow in greater detail are provided in [docs/wiley_commands.md](docs/wiley_commands.md).
 
-    %% set of dois
-    unprocessed_dois(["Unprocessed DOIs"])
 
-    %% source graph
-    dynamodb -->|"Retrieve all 'UNPROCESSED' DOIs"|unprocessed_dois
-    s3 -->|"Retrieve all DOIs from CSV files"| unprocessed_dois
-   
-```
+## Development
 
-### Processing of DOIs
+- To preview a list of available Makefile commands: `make help`
+- To install with dev dependencies: `make install`
+- To update dependencies: `make update`
+- To run unit tests: `make test`
+- To lint the repo: `make lint`
+- To run the app: `pipenv run awd --help`
 
-This sequence diagram depicts the processing workflow for a single DOI when the application's `deposit` command is run. 
+## Environment Variables
 
-```mermaid
----
-title:
----
-
-sequenceDiagram
-    participant wiley-app as Wiley application
-    participant s3 as Amazon S3
-    participant dynamodb as Amazon DynamoDB
-    participant ses as Amazon SES
-    participant sqs as Amazon SQS
-    participant crossref as Crossref
-    participant wiley-online-lib as Wiley Online Library
-
-    wiley-app ->> dynamodb: Get DOI item from table
-    dynamodb -->> wiley-app: DOI item
-    wiley-app ->> dynamodb: Increment (+1) process_attempts in table for DOI
-    wiley-app ->> crossref: Get metadata via API request
-    crossref -->> wiley-app: Crossref metadata
-    wiley-app ->> wiley-app: Map Crossref metadata to DSpace metadata
-    wiley-app ->> wiley-online-lib: Get PDF from Wiley via API request
-    wiley-online-lib -->> wiley-app: PDF
-    wiley-app ->> s3: Upload DSpace metadata JSON and Wiley PDF
-    wiley-app ->> sqs: Send message to 'dss-wiley-output' queue
-    wiley-app ->> wiley-app: Filter log streams to ERROR messages
-    wiley-app ->> ses: Send an email to stakeholders (subject: "Automated Wiley deposit errors")
-```
-
-## `listen`
-
-### Processing of DSS messages
-This sequence diagram depicts the processing workflow for a single message from the [dspace-submission-service](https://github.com/MITLibraries/dspace-submission-service/tree/main) when the application's `listen` command is run.
-
-```mermaid
----
-title: 
----
-
-sequenceDiagram
-    participant wiley-app as Wiley application
-    participant dynamodb as Amazon DynamoDB
-    participant ses as Amazon SES
-    participant sqs as Amazon SQS
-
-    wiley-app ->> sqs: Retrieve DSS message for the DOI
-    sqs -->> wiley-app: DSS message 
-    wiley-app ->> dynamodb: Get DOI item from table
-    dynamodb -->> wiley-app: DOI item
-    wiley-app ->> wiley-app: Log result of DSpace submission for the DOI
-    alt submission was successful
-        wiley-app ->> dynamodb: Set DOI's status to 'SUCCESS'
-    else submission result in error
-        alt DOI's process_attempts >= retry threshold 
-            wiley-app ->> dynamodb: Set DOI's status to 'FAILED'
-        else DOI's process_attempts < retry threshold
-            wiley-app ->> dynamodb: Reset DOI's status to 'UNPROCESSED'
-        end
-    end
-    wiley-app ->> ses: Send an email to stakeholders (subject: "DSS results")
-
+### Required
 
 ```
+WORKSPACE=### Set to 'dev' for local development, this will be set to 'stage' and 'prod' in those environments by Terraform.
 
+SENTRY_DSN=### If set to a valid Sentry DSN, enables Sentry exception monitoring. This is not needed for local development.
 
-## Installation
+DOI_TABLE=### The name of the DynamoDB table tracking Wiley deposits, e.g. 'wiley-<env>'.
 
-To install, clone the repo and run 
+METADATA_URL=### URL for the Crossref REST API used to retrieve metadata, i.e., "https://api.crossref.org/works/".
+
+CONTENT_URL=### Base URL for downloading PDFs from the Wiley Online Library.
+
+BUCKET=### S3 bucket storing CSVs from Wiley and downloaded content for publications.
+
+SQS_BASE_URL=### Base URL for message queuing service.
+
+SQS_INPUT_QUEUE=### Name of the queue for DSS, e.g. 'dss-input-<env>'.
+
+SQS_OUTPUT_QUEUE=### Name of the queue used in tracking Wiley deposits via the DynamoDB table, e.g. 'dss-wiley-output-<env>'.
+
+COLLECTION_HANDLE=### Collection handle for the 'MIT Open Access Articles' on DSpace@MIT.
+
+LOG_SOURCE_EMAIL=### Source email address used in the email for Wiley-Deposit errors.
+
+LOG_RECIPIENT_EMAIL=### Recipient email address used in the email for Wiley-Deposit errors.
+
+RETRY_THRESHOLD=### Maximum number of attempts allowed to process a Wiley publication.
+```
+
+### Optional
 
 ```
-pipenv run install 
-
+LOG_LEVEL=### Logging level. Defaults to 'INFO'.
 ```
 
-To install with development dependencies
+## CLI Commands
+
+### `awd`
 
 ```
-pipenv run install --dev
+Usage: -c [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  deposit  Process DOIs from .csv files and unprocessed DOIs from DynamoDB.
+  listen   Retrieve messages from an SQS queue and email the results to stakeholders.
 ```
 
-## Runnning commands
-
-To excute a command after installation, run:
+### `awd deposit` 
 
 ```
-pipenv run awd deposit
+Usage: -c deposit [OPTIONS]
+
+  Process DOIs from .csv files and unprocessed DOIs from DynamoDB.
+
+  Retrieve metadata and PDFs for the DOI and send a message to an SQS queue.
+  Errors generated during the process are emailed to stakeholders.
+
+Options:
+  --help  Show this message and exit.
 ```
 
-The available commands:
+### `awd listen`
 
-`deposit` - Process a text file of DOIs to retrieve and send metadata and PDFs as SQS messages to the DSpace Submission Service. Errors generated during the process are emailed to stakeholders.
+```
+Usage: -c listen [OPTIONS]
 
-`listen` - Retrieve messages from a DSpace Submission output queue and email the results to stakeholders.
+  Retrieve messages from an SQS queue and email the results to stakeholders.
 
-## Crossref to Dublin Core metadata mapping
-Metadata is retrieved from the Crossref API and is mapped to Dublin Core according to this crosswalk:
-
-Crossref field|DC field|Field notes
------- | ------ | -------
-author|dc.contributor.author|Multiple values possible, create separate field instances for each value. Names concatenated as Family, Given.
-container-title|dc.relation.journal|
-ISSN|dc.identifier.issn|Multiple values possible, create separate field instances for each value.
-issue|mit.journal.issue|
-issued|dc.date.issued|
-language|dc.langauge|
-original-title|dc.title.alternative|
-publisher|dc.publisher|
-short-title|dc.title.alternative|
-subtitle|dc.title.alternative|
-title|dc.title|
-URL|dc.relation.isversionof|
-volume|mit.journal.volume|
+Options:
+  --help  Show this message and exit.
+```
